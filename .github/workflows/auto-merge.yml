@@ -1,0 +1,20 @@
+name: Auto Merge PRs from a Specific User
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  auto-merge:
+    if: github.actor == 'momenashrafff'  
+    runs-on: ubuntu-latest
+    steps:
+      - name: Approve the PR
+        uses: hmarr/auto-approve-action@v3
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          
+      - name: Merge the PR
+        run: |
+          gh pr merge --auto --squash "$GITHUB_REF"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
