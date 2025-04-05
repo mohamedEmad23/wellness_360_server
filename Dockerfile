@@ -1,23 +1,23 @@
-# Use the official Node.js 18 image as the base image
-FROM node:18
+# Use Node.js 20 (LTS) base image
+FROM node:20
 
-# Set the working directory inside the container
+# Set working directory
 WORKDIR /app
 
-# Copy package.json and package-lock.json to the working directory
+# Copy dependency files first
 COPY package*.json ./
 
-# Install the project dependencies
+# Install all dependencies (including dev for build phase)
 RUN npm install
 
-# Copy the rest of the application code to the working directory
+# Copy project files
 COPY . .
 
-# Build the TypeScript code
+# Build the TypeScript app
 RUN npm run build
 
-# Expose the port the application runs on
+# Expose app port
 EXPOSE 3000
 
-# Define the command to run the application
+# Run in production
 CMD ["npm", "run", "start:prod"]
