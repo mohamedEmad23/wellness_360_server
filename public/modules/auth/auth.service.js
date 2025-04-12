@@ -94,7 +94,7 @@ let AuthService = class AuthService {
             email,
         }, {
             secret: this.configService.get('JWT_SECRET'),
-            expiresIn: this.configService.get('JWT_EXPIRES_IN'),
+            expiresIn: '1d',
         });
         return {
             accessToken,
