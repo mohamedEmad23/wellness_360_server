@@ -47,6 +47,15 @@ let AuthService = class AuthService {
                 email: user.email,
                 firstName: user.firstName,
                 lastName: user.lastName,
+                gender: user.gender,
+                dob: user.dob,
+                age: user.age,
+                height: user.height,
+                weight: user.weight,
+                activityLevel: user.activityLevel,
+                goal: user.goal,
+                dailyCalories: user.dailyCalories,
+                caloriesLeft: user.caloriesLeft,
                 isEmailVerified: user.isEmailVerified,
             },
             message: 'Registration successful. Please verify your email with the OTP sent to your email address.',
@@ -94,7 +103,7 @@ let AuthService = class AuthService {
             email,
         }, {
             secret: this.configService.get('JWT_SECRET'),
-            expiresIn: this.configService.get('JWT_EXPIRES_IN'),
+            expiresIn: '1d',
         });
         return {
             accessToken,

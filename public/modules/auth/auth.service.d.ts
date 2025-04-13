@@ -16,6 +16,15 @@ export declare class AuthService {
             email: string;
             firstName: string;
             lastName: string;
+            gender: "male" | "female";
+            dob: Date;
+            age: number;
+            height: number;
+            weight: number;
+            activityLevel: "sedentary" | "lightly active" | "moderately active" | "very active";
+            goal: "maintain" | "lose" | "gain";
+            dailyCalories: number;
+            caloriesLeft: number;
             isEmailVerified: boolean;
         };
         message: string;

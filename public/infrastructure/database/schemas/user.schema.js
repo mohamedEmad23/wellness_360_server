@@ -11,8 +11,7 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.UserSchema = exports.User = void 0;
 const mongoose_1 = require("@nestjs/mongoose");
-const mongoose_2 = require("mongoose");
-let User = class User extends mongoose_2.Document {
+let User = class User {
 };
 exports.User = User;
 __decorate([
@@ -47,6 +46,42 @@ __decorate([
     (0, mongoose_1.Prop)({ default: false }),
     __metadata("design:type", Boolean)
 ], User.prototype, "isEmailVerified", void 0);
+__decorate([
+    (0, mongoose_1.Prop)(),
+    __metadata("design:type", String)
+], User.prototype, "gender", void 0);
+__decorate([
+    (0, mongoose_1.Prop)(),
+    __metadata("design:type", Date)
+], User.prototype, "dob", void 0);
+__decorate([
+    (0, mongoose_1.Prop)(),
+    __metadata("design:type", Number)
+], User.prototype, "age", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({ required: true }),
+    __metadata("design:type", Number)
+], User.prototype, "height", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({ required: true }),
+    __metadata("design:type", Number)
+], User.prototype, "weight", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({ enum: ['sedentary', 'lightly active', 'moderately active', 'very active'], default: 'sedentary' }),
+    __metadata("design:type", String)
+], User.prototype, "activityLevel", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({ default: 'maintain' }),
+    __metadata("design:type", String)
+], User.prototype, "goal", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({ default: 3000 }),
+    __metadata("design:type", Number)
+], User.prototype, "dailyCalories", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({ default: function () { return this.dailyCalories; } }),
+    __metadata("design:type", Number)
+], User.prototype, "caloriesLeft", void 0);
 exports.User = User = __decorate([
     (0, mongoose_1.Schema)({ timestamps: { createdAt: 'created_at', updatedAt: false } })
 ], User);

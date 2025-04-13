@@ -1,8 +1,10 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 
+export type UserDocument = User & Document;
+
 @Schema({ timestamps: { createdAt: 'created_at', updatedAt: false } })
-export class User extends Document {
+export class User {
   @Prop({ required: true })
   firstName: string;
 
@@ -26,6 +28,33 @@ export class User extends Document {
 
   @Prop({ default: false })
   isEmailVerified: boolean;
+
+  @Prop()
+  gender?: 'male' | 'female';
+
+  @Prop()
+  dob?: Date;
+
+  @Prop()
+  age?: number;
+
+  @Prop({ required: true })
+  height: number; // in cm
+
+  @Prop({ required: true })
+  weight: number; // in kg
+
+  @Prop({ enum: ['sedentary', 'lightly active', 'moderately active', 'very active'], default: 'sedentary' })
+  activityLevel?: string;
+
+  @Prop({ default: 'maintain' })
+  goal?: 'lose' | 'maintain' | 'gain';
+
+  @Prop({ default: 3000 })
+  dailyCalories?: number;
+
+  @Prop({ default: function () { return this.dailyCalories; } })
+  caloriesLeft?: number; 
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

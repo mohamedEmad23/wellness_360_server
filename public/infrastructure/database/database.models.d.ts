@@ -1,1 +1,2 @@
-export declare const DatabaseModels: import("@nestjs/common").DynamicModule;
+export declare class DatabaseModels {
+}

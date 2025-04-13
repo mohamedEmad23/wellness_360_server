@@ -55,4 +55,65 @@ __decorate([
     (0, class_validator_1.MinLength)(8),
     __metadata("design:type", String)
 ], RegisterDto.prototype, "password", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ enum: ['male', 'female'], example: 'male' }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsEnum)(['male', 'female']),
+    __metadata("design:type", String)
+], RegisterDto.prototype, "gender", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ example: '2002-05-20' }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsDateString)(),
+    __metadata("design:type", Date)
+], RegisterDto.prototype, "dob", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ example: 22 }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.Min)(0),
+    __metadata("design:type", Number)
+], RegisterDto.prototype, "age", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({ example: 175, description: 'Height in centimeters' }),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.Min)(50),
+    __metadata("design:type", Number)
+], RegisterDto.prototype, "height", void 0);
+__decorate([
+    (0, swagger_1.ApiProperty)({ example: 70, description: 'Weight in kilograms' }),
+    (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.Min)(20),
+    __metadata("design:type", Number)
+], RegisterDto.prototype, "weight", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        enum: ['sedentary', 'lightly active', 'moderately active', 'very active'],
+        example: 'moderately active',
+    }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsEnum)(['sedentary', 'lightly active', 'moderately active', 'very active']),
+    __metadata("design:type", String)
+], RegisterDto.prototype, "activityLevel", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({
+        enum: ['lose', 'maintain', 'gain'],
+        example: 'maintain',
+    }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsEnum)(['lose', 'maintain', 'gain']),
+    __metadata("design:type", String)
+], RegisterDto.prototype, "goal", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ example: 3000 }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsNumber)(),
+    __metadata("design:type", Number)
+], RegisterDto.prototype, "dailyCalories", void 0);
+__decorate([
+    (0, swagger_1.ApiPropertyOptional)({ example: 3000 }),
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsNumber)(),
+    __metadata("design:type", Number)
+], RegisterDto.prototype, "caloriesLeft", void 0);
 //# sourceMappingURL=register.dto.js.map
