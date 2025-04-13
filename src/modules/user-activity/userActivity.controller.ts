@@ -32,7 +32,7 @@ import { Body, Controller, Post, Get, Param, Delete, UseGuards } from '@nestjs/c
     @ApiParam({ name: 'id', type: String, description: 'The ID of the user activity to delete' })
     @ApiResponse({ status: 200, description: 'Activity deleted successfully' })
     async deleteUserActivity(@Param('id') activityId: string, @GetUser('userId') userId: string) {
-      return this.userActivityService.deleteUserActivity(activityId);
+      return this.userActivityService.deleteUserActivity(activityId, userId);
     }
   }
   

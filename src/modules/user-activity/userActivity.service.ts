@@ -78,10 +78,10 @@ export class UserActivityService {
     });
   }
 
-  async deleteUserActivity(userActivityId: string) {
+  async deleteUserActivity(userActivityId: string, userId: string) {
     const userActivity_id = new Types.ObjectId(userActivityId);
     const activityEntry = await this.userActivityModel
-      .findById(userActivity_id)
+      .findOne({ _id: userActivity_id, user: userId })
       .populate('activity')
       .populate('user');
   
