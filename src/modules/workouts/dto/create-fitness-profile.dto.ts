@@ -1,14 +1,29 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsArray, IsBoolean, IsEnum, IsNumber, IsOptional, IsString, Max, Min } from 'class-validator';
-import { FitnessGoal, FitnessLevel } from '../../../infrastructure/database/schemas/fitness-profile.schema';
+import {
+  IsArray,
+  IsBoolean,
+  IsEnum,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Max,
+  Min,
+} from 'class-validator';
+import {
+  FitnessGoal,
+  FitnessLevel,
+} from '../../../infrastructure/database/schemas/fitness-profile.schema';
 
 export class CreateFitnessProfileDto {
   @ApiProperty({
     enum: FitnessLevel,
     default: FitnessLevel.BEGINNER,
     description: 'User fitness level',
+    example: FitnessLevel.BEGINNER,
   })
-  @IsEnum(FitnessLevel)
+  @IsEnum(FitnessLevel, {
+    message: `fitnessLevel must be one of the following values: ${Object.values(FitnessLevel).join(', ')}`,
+  })
   fitnessLevel: FitnessLevel;
 
   @ApiProperty({
@@ -18,7 +33,10 @@ export class CreateFitnessProfileDto {
     example: [FitnessGoal.WEIGHT_LOSS, FitnessGoal.ENDURANCE],
   })
   @IsArray()
-  @IsEnum(FitnessGoal, { each: true })
+  @IsEnum(FitnessGoal, {
+    each: true,
+    message: `Each goal must be one of the following values: ${Object.values(FitnessGoal).join(', ')}`,
+  })
   fitnessGoals: FitnessGoal[];
 
   @ApiProperty({
@@ -35,8 +53,12 @@ export class CreateFitnessProfileDto {
     type: Number,
     description: 'User height in centimeters',
     example: 175,
+    minimum: 50,
+    maximum: 250,
   })
   @IsNumber()
+  @Min(50, { message: 'Height must be at least 50 cm' })
+  @Max(250, { message: 'Height must be less than 250 cm' })
   @IsOptional()
   height?: number;
 
@@ -44,8 +66,12 @@ export class CreateFitnessProfileDto {
     type: Number,
     description: 'User weight in kilograms',
     example: 70,
+    minimum: 20,
+    maximum: 350,
   })
   @IsNumber()
+  @Min(20, { message: 'Weight must be at least 20 kg' })
+  @Max(350, { message: 'Weight must be less than 350 kg' })
   @IsOptional()
   weight?: number;
 
@@ -53,8 +79,12 @@ export class CreateFitnessProfileDto {
     type: Number,
     description: 'User target weight in kilograms',
     example: 65,
+    minimum: 20,
+    maximum: 350,
   })
   @IsNumber()
+  @Min(20, { message: 'Target weight must be at least 20 kg' })
+  @Max(350, { message: 'Target weight must be less than 350 kg' })
   @IsOptional()
   targetWeight?: number;
 
@@ -85,8 +115,8 @@ export class CreateFitnessProfileDto {
     default: 3,
   })
   @IsNumber()
-  @Min(0)
-  @Max(7)
+  @Min(0, { message: 'Available workout days must be at least 0' })
+  @Max(7, { message: 'Available workout days cannot exceed 7' })
   @IsOptional()
   availableWorkoutDays?: number;
 
@@ -98,8 +128,8 @@ export class CreateFitnessProfileDto {
     default: 45,
   })
   @IsNumber()
-  @Min(15)
-  @Max(120)
+  @Min(15, { message: 'Workout duration must be at least 15 minutes' })
+  @Max(120, { message: 'Workout duration must be less than 120 minutes' })
   @IsOptional()
   preferredWorkoutDuration?: number;
 

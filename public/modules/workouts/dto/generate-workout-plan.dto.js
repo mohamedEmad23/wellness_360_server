@@ -22,7 +22,9 @@ __decorate([
         description: 'Type of workout to generate',
         example: workout_plan_schema_1.WorkoutType.STRENGTH,
     }),
-    (0, class_validator_1.IsEnum)(workout_plan_schema_1.WorkoutType),
+    (0, class_validator_1.IsEnum)(workout_plan_schema_1.WorkoutType, {
+        message: `workoutType must be one of the following values: ${Object.values(workout_plan_schema_1.WorkoutType).join(', ')}`,
+    }),
     __metadata("design:type", String)
 ], GenerateWorkoutPlanDto.prototype, "workoutType", void 0);
 __decorate([
@@ -31,7 +33,9 @@ __decorate([
         description: 'Difficulty level of the workout',
         example: workout_plan_schema_1.WorkoutDifficulty.INTERMEDIATE,
     }),
-    (0, class_validator_1.IsEnum)(workout_plan_schema_1.WorkoutDifficulty),
+    (0, class_validator_1.IsEnum)(workout_plan_schema_1.WorkoutDifficulty, {
+        message: `difficulty must be one of the following values: ${Object.values(workout_plan_schema_1.WorkoutDifficulty).join(', ')}`,
+    }),
     __metadata("design:type", String)
 ], GenerateWorkoutPlanDto.prototype, "difficulty", void 0);
 __decorate([
@@ -48,7 +52,8 @@ __decorate([
     (0, swagger_1.ApiProperty)({
         isArray: true,
         description: 'Specific body areas to target',
-        example: ['chest', 'back', 'legs'],
+        example: ['chest', 'back', 'legs', 'arms', 'core'],
+        default: ['full body'],
     }),
     (0, class_validator_1.IsArray)(),
     (0, class_validator_1.IsString)({ each: true }),
@@ -64,8 +69,8 @@ __decorate([
         default: 4,
     }),
     (0, class_validator_1.IsNumber)(),
-    (0, class_validator_1.Min)(1),
-    (0, class_validator_1.Max)(12),
+    (0, class_validator_1.Min)(1, { message: 'Plan duration must be at least 1 week' }),
+    (0, class_validator_1.Max)(12, { message: 'Plan duration cannot exceed 12 weeks' }),
     __metadata("design:type", Number)
 ], GenerateWorkoutPlanDto.prototype, "duration", void 0);
 __decorate([
@@ -77,8 +82,8 @@ __decorate([
         default: 3,
     }),
     (0, class_validator_1.IsNumber)(),
-    (0, class_validator_1.Min)(1),
-    (0, class_validator_1.Max)(7),
+    (0, class_validator_1.Min)(1, { message: 'Days per week must be at least 1' }),
+    (0, class_validator_1.Max)(7, { message: 'Days per week cannot exceed 7' }),
     __metadata("design:type", Number)
 ], GenerateWorkoutPlanDto.prototype, "daysPerWeek", void 0);
 __decorate([
@@ -90,8 +95,8 @@ __decorate([
         default: 45,
     }),
     (0, class_validator_1.IsNumber)(),
-    (0, class_validator_1.Min)(15),
-    (0, class_validator_1.Max)(120),
+    (0, class_validator_1.Min)(15, { message: 'Workout duration must be at least 15 minutes' }),
+    (0, class_validator_1.Max)(120, { message: 'Workout duration must be less than 120 minutes' }),
     __metadata("design:type", Number)
 ], GenerateWorkoutPlanDto.prototype, "workoutDuration", void 0);
 __decorate([
@@ -123,6 +128,7 @@ __decorate([
         default: false,
     }),
     (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsBoolean)(),
     __metadata("design:type", Boolean)
 ], GenerateWorkoutPlanDto.prototype, "hasGymAccess", void 0);
 //# sourceMappingURL=generate-workout-plan.dto.js.map

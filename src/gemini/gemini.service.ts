@@ -30,6 +30,12 @@ export class GeminiService {
     this.googleAI = new GoogleGenerativeAI(geminiApiKey);
     this.model = this.googleAI.getGenerativeModel({
       model: GEMINI_MODEL,
+      generationConfig: {
+        temperature: 0.2, // Lower temperature for more consistent, structured output
+        topP: 0.8,
+        topK: 40,
+        maxOutputTokens: 8000,
+      },
     });
 
     // Setup session cleanup every 10 minutes
@@ -119,65 +125,99 @@ export class GeminiService {
 
   /**
    * Generate a structured workout plan with JSON output
+   * Uses special system prompts to ensure consistent output format
    */
   async generateStructuredWorkoutPlan(prompt: string): Promise<any> {
     try {
-      // Use a system prompt to ensure JSON output format
+      // System prompt specifically designed to get well-formed JSON
       const structuredPrompt = `
-            You are a fitness expert AI that generates workout plans.
-            Generate a detailed workout plan based on the following requirements:
-            ${prompt}
-            
-            Format your response as a valid JSON object with the following structure:
-            {
-              "name": "Plan name",
-              "description": "Plan description",
-              "workoutDays": [
-                {
-                  "day": "Day 1",
-                  "focus": "Target area",
-                  "warmup": "Warmup description",
-                  "exercises": [
-                    {
-                      "name": "Exercise name",
-                      "description": "Exercise description",
-                      "sets": number,
-                      "reps": "rep range or time",
-                      "restBetweenSets": "rest period",
-                      "targetMuscles": ["muscle1", "muscle2"],
-                      "requiredEquipment": ["equipment1", "equipment2"]
-                    }
-                  ],
-                  "cooldown": "Cooldown description",
-                  "duration": minutes,
-                  "notes": "Additional notes"
-                }
-              ]
-            }`;
+You are a fitness expert AI that generates workout plans. You must always respond with VALID JSON only.
+The JSON must strictly follow this exact structure without ANY additional text or explanation:
 
-      const generationResult =
-        await this.model.generateContent(structuredPrompt);
+{
+  "name": "Name of Plan",
+  "description": "Brief description of the plan",
+  "workoutDays": [
+    {
+      "day": "Day 1",
+      "focus": "Target area",
+      "warmup": "Warmup description",
+      "exercises": [
+        {
+          "name": "Exercise name",
+          "description": "Exercise description",
+          "sets": 3,
+          "reps": "8-12",
+          "restBetweenSets": "60 seconds",
+          "targetMuscles": ["muscle1", "muscle2"],
+          "requiredEquipment": ["equipment1", "equipment2"]
+        }
+      ],
+      "cooldown": "Cooldown description",
+      "duration": 45,
+      "notes": "Additional notes"
+    }
+  ]
+}
+
+Generate a detailed workout plan based on the following requirements:
+${prompt}
+
+IMPORTANT: Return a JSON object that exactly matches the structure shown above, with NO ADDITIONAL text, comments, code blocks or explanations. ONLY RETURN VALID, PARSEABLE JSON.`;
+
+      // Set higher temperature for diversity but enforce strict response format
+      const generationResult = await this.model.generateContent({
+        contents: [{ role: 'user', parts: [{ text: structuredPrompt }] }],
+        generationConfig: {
+          temperature: 0.2,
+          topP: 0.8,
+        },
+      });
+
       const responseText = generationResult.response.text();
 
       // Try to parse the JSON response
       try {
-        return JSON.parse(responseText);
+        const jsonObject = JSON.parse(responseText);
+
+        // Validate the structure
+        if (!this.validateWorkoutPlanStructure(jsonObject)) {
+          throw new Error(
+            'Generated workout plan does not match required structure',
+          );
+        }
+
+        return jsonObject;
       } catch (parseError) {
         this.logger.error('Error parsing JSON response', parseError);
-        // If we can't parse JSON, try to extract it from the text (Gemini sometimes adds explanations)
+
+        // Try to extract JSON from the response if it's wrapped in markdown code blocks or has additional text
         const jsonMatch =
-          responseText.match(/```json\n([\s\S]*?)\n```/) ||
-          responseText.match(/```\n([\s\S]*?)\n```/) ||
+          responseText.match(/```json\s*([\s\S]*?)\s*```/) ||
+          responseText.match(/```\s*([\s\S]*?)\s*```/) ||
           responseText.match(/{[\s\S]*?}/);
 
         if (jsonMatch) {
+          const extractedJson = jsonMatch[1] || jsonMatch[0];
           try {
-            return JSON.parse(jsonMatch[1] || jsonMatch[0]);
+            const parsedJson = JSON.parse(extractedJson.trim());
+
+            // Validate structure even for extracted JSON
+            if (!this.validateWorkoutPlanStructure(parsedJson)) {
+              throw new Error(
+                'Extracted workout plan does not match required structure',
+              );
+            }
+
+            return parsedJson;
           } catch (e) {
-            throw new Error('Could not parse workout plan JSON');
+            this.logger.error('Failed to parse extracted JSON', e);
+            throw new Error('Could not parse workout plan JSON: ' + e.message);
           }
         } else {
-          throw new Error('Response did not contain valid JSON');
+          throw new Error(
+            'Response did not contain valid JSON: ' + parseError.message,
+          );
         }
       }
     } catch (error) {
@@ -186,5 +226,35 @@ export class GeminiService {
         `Failed to generate structured workout plan: ${error.message}`,
       );
     }
+  }
+
+  /**
+   * Validates that the generated workout plan matches the expected structure
+   */
+  private validateWorkoutPlanStructure(plan: any): boolean {
+    if (!plan || typeof plan !== 'object') return false;
+    if (!plan.name || typeof plan.name !== 'string') return false;
+    if (!plan.description || typeof plan.description !== 'string') return false;
+    if (!Array.isArray(plan.workoutDays) || plan.workoutDays.length === 0)
+      return false;
+
+    // Validate each workout day
+    for (const day of plan.workoutDays) {
+      if (!day.day || typeof day.day !== 'string') return false;
+      if (!day.focus || typeof day.focus !== 'string') return false;
+      if (!Array.isArray(day.exercises) || day.exercises.length === 0)
+        return false;
+
+      // Validate each exercise
+      for (const exercise of day.exercises) {
+        if (!exercise.name || typeof exercise.name !== 'string') return false;
+        if (!exercise.sets || typeof exercise.sets !== 'number') return false;
+        if (!exercise.reps || typeof exercise.reps !== 'string') return false;
+        if (!Array.isArray(exercise.targetMuscles)) return false;
+        if (!Array.isArray(exercise.requiredEquipment)) return false;
+      }
+    }
+
+    return true;
   }
 }

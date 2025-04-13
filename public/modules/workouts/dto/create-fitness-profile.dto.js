@@ -21,8 +21,11 @@ __decorate([
         enum: fitness_profile_schema_1.FitnessLevel,
         default: fitness_profile_schema_1.FitnessLevel.BEGINNER,
         description: 'User fitness level',
+        example: fitness_profile_schema_1.FitnessLevel.BEGINNER,
     }),
-    (0, class_validator_1.IsEnum)(fitness_profile_schema_1.FitnessLevel),
+    (0, class_validator_1.IsEnum)(fitness_profile_schema_1.FitnessLevel, {
+        message: `fitnessLevel must be one of the following values: ${Object.values(fitness_profile_schema_1.FitnessLevel).join(', ')}`,
+    }),
     __metadata("design:type", String)
 ], CreateFitnessProfileDto.prototype, "fitnessLevel", void 0);
 __decorate([
@@ -33,7 +36,10 @@ __decorate([
         example: [fitness_profile_schema_1.FitnessGoal.WEIGHT_LOSS, fitness_profile_schema_1.FitnessGoal.ENDURANCE],
     }),
     (0, class_validator_1.IsArray)(),
-    (0, class_validator_1.IsEnum)(fitness_profile_schema_1.FitnessGoal, { each: true }),
+    (0, class_validator_1.IsEnum)(fitness_profile_schema_1.FitnessGoal, {
+        each: true,
+        message: `Each goal must be one of the following values: ${Object.values(fitness_profile_schema_1.FitnessGoal).join(', ')}`,
+    }),
     __metadata("design:type", Array)
 ], CreateFitnessProfileDto.prototype, "fitnessGoals", void 0);
 __decorate([
@@ -52,8 +58,12 @@ __decorate([
         type: Number,
         description: 'User height in centimeters',
         example: 175,
+        minimum: 50,
+        maximum: 250,
     }),
     (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.Min)(50, { message: 'Height must be at least 50 cm' }),
+    (0, class_validator_1.Max)(250, { message: 'Height must be less than 250 cm' }),
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", Number)
 ], CreateFitnessProfileDto.prototype, "height", void 0);
@@ -62,8 +72,12 @@ __decorate([
         type: Number,
         description: 'User weight in kilograms',
         example: 70,
+        minimum: 20,
+        maximum: 350,
     }),
     (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.Min)(20, { message: 'Weight must be at least 20 kg' }),
+    (0, class_validator_1.Max)(350, { message: 'Weight must be less than 350 kg' }),
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", Number)
 ], CreateFitnessProfileDto.prototype, "weight", void 0);
@@ -72,8 +86,12 @@ __decorate([
         type: Number,
         description: 'User target weight in kilograms',
         example: 65,
+        minimum: 20,
+        maximum: 350,
     }),
     (0, class_validator_1.IsNumber)(),
+    (0, class_validator_1.Min)(20, { message: 'Target weight must be at least 20 kg' }),
+    (0, class_validator_1.Max)(350, { message: 'Target weight must be less than 350 kg' }),
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", Number)
 ], CreateFitnessProfileDto.prototype, "targetWeight", void 0);
@@ -107,8 +125,8 @@ __decorate([
         default: 3,
     }),
     (0, class_validator_1.IsNumber)(),
-    (0, class_validator_1.Min)(0),
-    (0, class_validator_1.Max)(7),
+    (0, class_validator_1.Min)(0, { message: 'Available workout days must be at least 0' }),
+    (0, class_validator_1.Max)(7, { message: 'Available workout days cannot exceed 7' }),
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", Number)
 ], CreateFitnessProfileDto.prototype, "availableWorkoutDays", void 0);
@@ -121,8 +139,8 @@ __decorate([
         default: 45,
     }),
     (0, class_validator_1.IsNumber)(),
-    (0, class_validator_1.Min)(15),
-    (0, class_validator_1.Max)(120),
+    (0, class_validator_1.Min)(15, { message: 'Workout duration must be at least 15 minutes' }),
+    (0, class_validator_1.Max)(120, { message: 'Workout duration must be less than 120 minutes' }),
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", Number)
 ], CreateFitnessProfileDto.prototype, "preferredWorkoutDuration", void 0);

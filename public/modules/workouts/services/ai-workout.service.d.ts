@@ -12,7 +12,7 @@ export declare class AiWorkoutService {
     private buildWorkoutPrompt;
     private callAiService;
     private parseAiWorkoutResponse;
+    private normalizeWorkoutDays;
     private planRequiresEquipment;
     private getRequiredEquipment;
-    private getMockWorkoutResponse;
 }

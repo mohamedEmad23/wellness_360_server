@@ -39,7 +39,7 @@ __decorate([
     (0, mongoose_1.Prop)({
         type: String,
         enum: Object.values(FitnessLevel),
-        default: FitnessLevel.BEGINNER
+        default: FitnessLevel.BEGINNER,
     }),
     __metadata("design:type", String)
 ], FitnessProfile.prototype, "fitnessLevel", void 0);
@@ -47,7 +47,7 @@ __decorate([
     (0, mongoose_1.Prop)({
         type: [String],
         enum: Object.values(FitnessGoal),
-        default: [FitnessGoal.GENERAL_FITNESS]
+        default: [FitnessGoal.GENERAL_FITNESS],
     }),
     __metadata("design:type", Array)
 ], FitnessProfile.prototype, "fitnessGoals", void 0);
@@ -76,11 +76,11 @@ __decorate([
     __metadata("design:type", Array)
 ], FitnessProfile.prototype, "injuries", void 0);
 __decorate([
-    (0, mongoose_1.Prop)({ type: Number, min: 0, max: 7, default: 3 }),
+    (0, mongoose_1.Prop)({ type: Number, min: 1, max: 7, default: 3 }),
     __metadata("design:type", Number)
 ], FitnessProfile.prototype, "availableWorkoutDays", void 0);
 __decorate([
-    (0, mongoose_1.Prop)({ type: Number, min: 15, max: 120, default: 45 }),
+    (0, mongoose_1.Prop)({ type: Number, min: 15, default: 45 }),
     __metadata("design:type", Number)
 ], FitnessProfile.prototype, "preferredWorkoutDuration", void 0);
 __decorate([

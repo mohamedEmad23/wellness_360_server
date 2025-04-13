@@ -16,4 +16,5 @@ export declare class GeminiService {
     }>;
     generateWorkoutPlan(prompt: string): Promise<string>;
     generateStructuredWorkoutPlan(prompt: string): Promise<any>;
+    private validateWorkoutPlanStructure;
 }

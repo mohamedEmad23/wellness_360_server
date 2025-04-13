@@ -22,17 +22,17 @@ export class FitnessProfile extends Document {
   @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User', required: true })
   userId: User;
 
-  @Prop({ 
-    type: String, 
+  @Prop({
+    type: String,
     enum: Object.values(FitnessLevel),
-    default: FitnessLevel.BEGINNER 
+    default: FitnessLevel.BEGINNER,
   })
   fitnessLevel: FitnessLevel;
 
-  @Prop({ 
-    type: [String], 
+  @Prop({
+    type: [String],
     enum: Object.values(FitnessGoal),
-    default: [FitnessGoal.GENERAL_FITNESS] 
+    default: [FitnessGoal.GENERAL_FITNESS],
   })
   fitnessGoals: FitnessGoal[];
 
@@ -54,10 +54,10 @@ export class FitnessProfile extends Document {
   @Prop({ type: [String], default: [] })
   injuries: string[];
 
-  @Prop({ type: Number, min: 0, max: 7, default: 3 })
+  @Prop({ type: Number, min: 1, max: 7, default: 3 })
   availableWorkoutDays: number;
 
-  @Prop({ type: Number, min: 15, max: 120, default: 45 })
+  @Prop({ type: Number, min: 15, default: 45 })
   preferredWorkoutDuration: number; // in minutes
 
   @Prop({ type: Boolean, default: false })
@@ -67,4 +67,5 @@ export class FitnessProfile extends Document {
   availableEquipment: string[];
 }
 
-export const FitnessProfileSchema = SchemaFactory.createForClass(FitnessProfile);
+export const FitnessProfileSchema =
+  SchemaFactory.createForClass(FitnessProfile);

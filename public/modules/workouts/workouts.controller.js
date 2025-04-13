@@ -24,32 +24,105 @@ let WorkoutsController = class WorkoutsController {
         this.workoutsService = workoutsService;
     }
     async createOrUpdateFitnessProfile(req, createFitnessProfileDto) {
-        return this.workoutsService.createOrUpdateFitnessProfile(req.user._id.toString(), createFitnessProfileDto);
+        try {
+            return this.workoutsService.createOrUpdateFitnessProfile(req.user._id.toString(), createFitnessProfileDto);
+        }
+        catch (error) {
+            if (error instanceof common_1.HttpException) {
+                throw error;
+            }
+            throw new common_1.HttpException(`Failed to create fitness profile: ${error.message}`, common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
     async getFitnessProfile(req) {
-        return this.workoutsService.getFitnessProfile(req.user._id.toString());
+        try {
+            return this.workoutsService.getFitnessProfile(req.user._id.toString());
+        }
+        catch (error) {
+            if (error instanceof common_1.HttpException) {
+                throw error;
+            }
+            throw new common_1.HttpException(`Failed to retrieve fitness profile: ${error.message}`, common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
     async generateWorkoutPlan(req, generateWorkoutPlanDto) {
-        return this.workoutsService.generateWorkoutPlan(req.user._id.toString(), generateWorkoutPlanDto);
+        try {
+            return this.workoutsService.generateWorkoutPlan(req.user._id.toString(), generateWorkoutPlanDto);
+        }
+        catch (error) {
+            if (error instanceof common_1.HttpException) {
+                throw error;
+            }
+            if (error.message?.includes('Failed to generate') ||
+                error.message?.includes('parsing')) {
+                throw new common_1.HttpException('Error generating workout plan. Please try again later.', common_1.HttpStatus.SERVICE_UNAVAILABLE);
+            }
+            throw new common_1.HttpException(`Failed to generate workout plan: ${error.message}`, common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
     async getUserWorkoutPlans(req) {
-        return this.workoutsService.getUserWorkoutPlans(req.user._id.toString());
+        try {
+            return this.workoutsService.getUserWorkoutPlans(req.user._id.toString());
+        }
+        catch (error) {
+            throw new common_1.HttpException(`Failed to retrieve workout plans: ${error.message}`, common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
     async getWorkoutPlan(id) {
-        return this.workoutsService.getWorkoutPlan(id);
+        try {
+            return this.workoutsService.getWorkoutPlan(id);
+        }
+        catch (error) {
+            if (error instanceof common_1.HttpException) {
+                throw error;
+            }
+            throw new common_1.HttpException(`Failed to retrieve workout plan: ${error.message}`, common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
     async deleteWorkoutPlan(id) {
-        await this.workoutsService.deleteWorkoutPlan(id);
-        return { message: 'Workout plan deleted successfully' };
+        try {
+            await this.workoutsService.deleteWorkoutPlan(id);
+            return { message: 'Workout plan deleted successfully' };
+        }
+        catch (error) {
+            if (error instanceof common_1.HttpException) {
+                throw error;
+            }
+            throw new common_1.HttpException(`Failed to delete workout plan: ${error.message}`, common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
     async rateWorkoutPlan(id, rating) {
-        return this.workoutsService.rateWorkoutPlan(id, rating);
+        try {
+            if (rating < 1 || rating > 5 || !Number.isInteger(rating)) {
+                throw new common_1.HttpException('Rating must be an integer between 1 and 5', common_1.HttpStatus.BAD_REQUEST);
+            }
+            return this.workoutsService.rateWorkoutPlan(id, rating);
+        }
+        catch (error) {
+            if (error instanceof common_1.HttpException) {
+                throw error;
+            }
+            throw new common_1.HttpException(`Failed to rate workout plan: ${error.message}`, common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
     async trackWorkoutPlanUsage(id) {
-        return this.workoutsService.trackWorkoutPlanUsage(id);
+        try {
+            return this.workoutsService.trackWorkoutPlanUsage(id);
+        }
+        catch (error) {
+            if (error instanceof common_1.HttpException) {
+                throw error;
+            }
+            throw new common_1.HttpException(`Failed to track workout plan usage: ${error.message}`, common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
     async getRecommendedWorkoutPlans(req) {
-        return this.workoutsService.getRecommendedWorkoutPlans(req.user._id.toString());
+        try {
+            return this.workoutsService.getRecommendedWorkoutPlans(req.user._id.toString());
+        }
+        catch (error) {
+            throw new common_1.HttpException(`Failed to get recommended workout plans: ${error.message}`, common_1.HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 };
 exports.WorkoutsController = WorkoutsController;
@@ -61,6 +134,10 @@ __decorate([
     (0, swagger_1.ApiResponse)({
         status: 201,
         description: 'The fitness profile has been successfully created or updated.',
+    }),
+    (0, swagger_1.ApiResponse)({
+        status: 400,
+        description: 'Invalid input data.',
     }),
     __param(0, (0, common_1.Request)()),
     __param(1, (0, common_1.Body)()),
@@ -94,6 +171,14 @@ __decorate([
     (0, swagger_1.ApiResponse)({
         status: 201,
         description: 'The workout plan has been successfully generated.',
+    }),
+    (0, swagger_1.ApiResponse)({
+        status: 400,
+        description: 'Invalid input data.',
+    }),
+    (0, swagger_1.ApiResponse)({
+        status: 500,
+        description: 'Error generating workout plan.',
     }),
     __param(0, (0, common_1.Request)()),
     __param(1, (0, common_1.Body)()),

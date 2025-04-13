@@ -1,15 +1,22 @@
-import { 
-  Body, 
-  Controller, 
-  Delete, 
-  Get, 
-  Param, 
-  Post, 
-  Put, 
-  Request, 
-  UseGuards 
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpException,
+  HttpStatus,
+  Param,
+  Post,
+  Put,
+  Request,
+  UseGuards,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { WorkoutsService } from '../workouts/services/workouts.service';
 import { CreateFitnessProfileDto } from '../workouts/dto/create-fitness-profile.dto';
@@ -26,16 +33,35 @@ export class WorkoutsController {
   @ApiOperation({ summary: 'Create or update fitness profile' })
   @ApiResponse({
     status: 201,
-    description: 'The fitness profile has been successfully created or updated.',
+    description:
+      'The fitness profile has been successfully created or updated.',
+  })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid input data.',
   })
   async createOrUpdateFitnessProfile(
     @Request() req,
     @Body() createFitnessProfileDto: CreateFitnessProfileDto,
   ) {
-    return this.workoutsService.createOrUpdateFitnessProfile(
-      req.user._id.toString(),
-      createFitnessProfileDto,
-    );
+    try {
+      // The class-validator decorators will handle validation automatically
+      return this.workoutsService.createOrUpdateFitnessProfile(
+        req.user._id.toString(),
+        createFitnessProfileDto,
+      );
+    } catch (error) {
+      // Pass through BadRequestExceptions from validation
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      // Handle other errors
+      throw new HttpException(
+        `Failed to create fitness profile: ${error.message}`,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 
   @UseGuards(JwtAuthGuard)
@@ -51,7 +77,17 @@ export class WorkoutsController {
     description: 'Fitness profile not found.',
   })
   async getFitnessProfile(@Request() req) {
-    return this.workoutsService.getFitnessProfile(req.user._id.toString());
+    try {
+      return this.workoutsService.getFitnessProfile(req.user._id.toString());
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new HttpException(
+        `Failed to retrieve fitness profile: ${error.message}`,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 
   @UseGuards(JwtAuthGuard)
@@ -62,14 +98,46 @@ export class WorkoutsController {
     status: 201,
     description: 'The workout plan has been successfully generated.',
   })
+  @ApiResponse({
+    status: 400,
+    description: 'Invalid input data.',
+  })
+  @ApiResponse({
+    status: 500,
+    description: 'Error generating workout plan.',
+  })
   async generateWorkoutPlan(
     @Request() req,
     @Body() generateWorkoutPlanDto: GenerateWorkoutPlanDto,
   ) {
-    return this.workoutsService.generateWorkoutPlan(
-      req.user._id.toString(),
-      generateWorkoutPlanDto,
-    );
+    try {
+      return this.workoutsService.generateWorkoutPlan(
+        req.user._id.toString(),
+        generateWorkoutPlanDto,
+      );
+    } catch (error) {
+      // Pass through BadRequestExceptions from validation
+      if (error instanceof HttpException) {
+        throw error;
+      }
+
+      // Handle AI service errors specifically
+      if (
+        error.message?.includes('Failed to generate') ||
+        error.message?.includes('parsing')
+      ) {
+        throw new HttpException(
+          'Error generating workout plan. Please try again later.',
+          HttpStatus.SERVICE_UNAVAILABLE,
+        );
+      }
+
+      // Handle other errors
+      throw new HttpException(
+        `Failed to generate workout plan: ${error.message}`,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 
   @UseGuards(JwtAuthGuard)
@@ -81,7 +149,14 @@ export class WorkoutsController {
     description: 'Returns all workout plans for the user.',
   })
   async getUserWorkoutPlans(@Request() req) {
-    return this.workoutsService.getUserWorkoutPlans(req.user._id.toString());
+    try {
+      return this.workoutsService.getUserWorkoutPlans(req.user._id.toString());
+    } catch (error) {
+      throw new HttpException(
+        `Failed to retrieve workout plans: ${error.message}`,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 
   @UseGuards(JwtAuthGuard)
@@ -97,7 +172,17 @@ export class WorkoutsController {
     description: 'Workout plan not found.',
   })
   async getWorkoutPlan(@Param('id') id: string) {
-    return this.workoutsService.getWorkoutPlan(id);
+    try {
+      return this.workoutsService.getWorkoutPlan(id);
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new HttpException(
+        `Failed to retrieve workout plan: ${error.message}`,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 
   @UseGuards(JwtAuthGuard)
@@ -113,8 +198,18 @@ export class WorkoutsController {
     description: 'Workout plan not found.',
   })
   async deleteWorkoutPlan(@Param('id') id: string) {
-    await this.workoutsService.deleteWorkoutPlan(id);
-    return { message: 'Workout plan deleted successfully' };
+    try {
+      await this.workoutsService.deleteWorkoutPlan(id);
+      return { message: 'Workout plan deleted successfully' };
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new HttpException(
+        `Failed to delete workout plan: ${error.message}`,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 
   @UseGuards(JwtAuthGuard)
@@ -133,7 +228,24 @@ export class WorkoutsController {
     @Param('id') id: string,
     @Body('rating') rating: number,
   ) {
-    return this.workoutsService.rateWorkoutPlan(id, rating);
+    try {
+      if (rating < 1 || rating > 5 || !Number.isInteger(rating)) {
+        throw new HttpException(
+          'Rating must be an integer between 1 and 5',
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      return this.workoutsService.rateWorkoutPlan(id, rating);
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new HttpException(
+        `Failed to rate workout plan: ${error.message}`,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 
   @UseGuards(JwtAuthGuard)
@@ -149,7 +261,17 @@ export class WorkoutsController {
     description: 'Workout plan not found.',
   })
   async trackWorkoutPlanUsage(@Param('id') id: string) {
-    return this.workoutsService.trackWorkoutPlanUsage(id);
+    try {
+      return this.workoutsService.trackWorkoutPlanUsage(id);
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new HttpException(
+        `Failed to track workout plan usage: ${error.message}`,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 
   @UseGuards(JwtAuthGuard)
@@ -161,6 +283,15 @@ export class WorkoutsController {
     description: 'Returns recommended workout plans for the user.',
   })
   async getRecommendedWorkoutPlans(@Request() req) {
-    return this.workoutsService.getRecommendedWorkoutPlans(req.user._id.toString());
+    try {
+      return this.workoutsService.getRecommendedWorkoutPlans(
+        req.user._id.toString(),
+      );
+    } catch (error) {
+      throw new HttpException(
+        `Failed to get recommended workout plans: ${error.message}`,
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 }

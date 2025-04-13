@@ -1,6 +1,18 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsArray, IsEnum, IsNumber, IsOptional, IsString, Max, Min } from 'class-validator';
-import { WorkoutDifficulty, WorkoutType } from '../../../infrastructure/database/schemas/workout-plan.schema';
+import {
+  IsArray,
+  IsBoolean,
+  IsEnum,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Max,
+  Min,
+} from 'class-validator';
+import {
+  WorkoutDifficulty,
+  WorkoutType,
+} from '../../../infrastructure/database/schemas/workout-plan.schema';
 
 export class GenerateWorkoutPlanDto {
   @ApiProperty({
@@ -8,7 +20,9 @@ export class GenerateWorkoutPlanDto {
     description: 'Type of workout to generate',
     example: WorkoutType.STRENGTH,
   })
-  @IsEnum(WorkoutType)
+  @IsEnum(WorkoutType, {
+    message: `workoutType must be one of the following values: ${Object.values(WorkoutType).join(', ')}`,
+  })
   workoutType: WorkoutType;
 
   @ApiProperty({
@@ -16,7 +30,9 @@ export class GenerateWorkoutPlanDto {
     description: 'Difficulty level of the workout',
     example: WorkoutDifficulty.INTERMEDIATE,
   })
-  @IsEnum(WorkoutDifficulty)
+  @IsEnum(WorkoutDifficulty, {
+    message: `difficulty must be one of the following values: ${Object.values(WorkoutDifficulty).join(', ')}`,
+  })
   difficulty: WorkoutDifficulty;
 
   @ApiProperty({
@@ -31,7 +47,8 @@ export class GenerateWorkoutPlanDto {
   @ApiProperty({
     isArray: true,
     description: 'Specific body areas to target',
-    example: ['chest', 'back', 'legs'],
+    example: ['chest', 'back', 'legs', 'arms', 'core'],
+    default: ['full body'],
   })
   @IsArray()
   @IsString({ each: true })
@@ -46,8 +63,8 @@ export class GenerateWorkoutPlanDto {
     default: 4,
   })
   @IsNumber()
-  @Min(1)
-  @Max(12)
+  @Min(1, { message: 'Plan duration must be at least 1 week' })
+  @Max(12, { message: 'Plan duration cannot exceed 12 weeks' })
   duration: number;
 
   @ApiProperty({
@@ -58,8 +75,8 @@ export class GenerateWorkoutPlanDto {
     default: 3,
   })
   @IsNumber()
-  @Min(1)
-  @Max(7)
+  @Min(1, { message: 'Days per week must be at least 1' })
+  @Max(7, { message: 'Days per week cannot exceed 7' })
   daysPerWeek: number;
 
   @ApiProperty({
@@ -70,8 +87,8 @@ export class GenerateWorkoutPlanDto {
     default: 45,
   })
   @IsNumber()
-  @Min(15)
-  @Max(120)
+  @Min(15, { message: 'Workout duration must be at least 15 minutes' })
+  @Max(120, { message: 'Workout duration must be less than 120 minutes' })
   workoutDuration: number;
 
   @ApiProperty({
@@ -100,5 +117,6 @@ export class GenerateWorkoutPlanDto {
     default: false,
   })
   @IsOptional()
+  @IsBoolean()
   hasGymAccess?: boolean;
 }
