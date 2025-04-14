@@ -28,8 +28,15 @@ let WorkoutsController = class WorkoutsController {
             return this.workoutsService.createOrUpdateFitnessProfile(req.user._id.toString(), createFitnessProfileDto);
         }
         catch (error) {
-            if (error instanceof common_1.HttpException) {
+            if (error.name === 'BadRequestException' || error.status === 400) {
                 throw error;
+            }
+            if (error.name === 'ValidationError') {
+                const messages = Object.values(error.errors).map((err) => err.message);
+                throw new common_1.HttpException({ message: 'Validation failed', errors: messages }, common_1.HttpStatus.BAD_REQUEST);
+            }
+            if (error.name === 'MongoServerError' && error.code === 121) {
+                throw new common_1.HttpException('Invalid value provided for fitness level or fitness goals. Please use only valid values.', common_1.HttpStatus.BAD_REQUEST);
             }
             throw new common_1.HttpException(`Failed to create fitness profile: ${error.message}`, common_1.HttpStatus.INTERNAL_SERVER_ERROR);
         }
@@ -50,8 +57,15 @@ let WorkoutsController = class WorkoutsController {
             return this.workoutsService.generateWorkoutPlan(req.user._id.toString(), generateWorkoutPlanDto);
         }
         catch (error) {
-            if (error instanceof common_1.HttpException) {
+            if (error.name === 'BadRequestException' || error.status === 400) {
                 throw error;
+            }
+            if (error.name === 'ValidationError') {
+                const messages = Object.values(error.errors).map((err) => err.message);
+                throw new common_1.HttpException({ message: 'Validation failed', errors: messages }, common_1.HttpStatus.BAD_REQUEST);
+            }
+            if (error.name === 'MongoServerError' && error.code === 121) {
+                throw new common_1.HttpException('Invalid value provided for workout type or difficulty. Please use only valid values.', common_1.HttpStatus.BAD_REQUEST);
             }
             if (error.message?.includes('Failed to generate') ||
                 error.message?.includes('parsing')) {

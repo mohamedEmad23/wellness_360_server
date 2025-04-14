@@ -26,17 +26,31 @@ let WorkoutsService = class WorkoutsService {
         this.aiWorkoutService = aiWorkoutService;
     }
     async createOrUpdateFitnessProfile(userId, profileDto) {
-        const existingProfile = await this.fitnessProfileModel.findOne({ userId });
-        if (existingProfile) {
-            Object.assign(existingProfile, profileDto);
-            return existingProfile.save();
-        }
-        else {
-            const newProfile = new this.fitnessProfileModel({
+        try {
+            const existingProfile = await this.fitnessProfileModel.findOne({
                 userId,
-                ...profileDto,
             });
-            return newProfile.save();
+            if (existingProfile) {
+                Object.assign(existingProfile, profileDto);
+                return await existingProfile.save();
+            }
+            else {
+                const newProfile = new this.fitnessProfileModel({
+                    userId,
+                    ...profileDto,
+                });
+                return await newProfile.save();
+            }
+        }
+        catch (error) {
+            if (error instanceof mongoose_2.Error.ValidationError) {
+                const errorMessages = Object.values(error.errors).map((err) => err.message);
+                throw new common_1.BadRequestException({
+                    message: 'Fitness profile validation failed',
+                    errors: errorMessages,
+                });
+            }
+            throw error;
         }
     }
     async getFitnessProfile(userId) {
@@ -47,18 +61,30 @@ let WorkoutsService = class WorkoutsService {
         return profile;
     }
     async generateWorkoutPlan(userId, generateDto) {
-        let fitnessProfile = null;
         try {
-            fitnessProfile = await this.getFitnessProfile(userId);
+            let fitnessProfile = null;
+            try {
+                fitnessProfile = await this.getFitnessProfile(userId);
+            }
+            catch (error) {
+            }
+            const workoutPlanData = await this.aiWorkoutService.generateWorkoutPlan(generateDto, fitnessProfile);
+            const workoutPlan = new this.workoutPlanModel({
+                ...workoutPlanData,
+                userId,
+            });
+            return await workoutPlan.save();
         }
         catch (error) {
+            if (error instanceof mongoose_2.Error.ValidationError) {
+                const errorMessages = Object.values(error.errors).map((err) => err.message);
+                throw new common_1.BadRequestException({
+                    message: 'Workout plan validation failed',
+                    errors: errorMessages,
+                });
+            }
+            throw error;
         }
-        const workoutPlanData = await this.aiWorkoutService.generateWorkoutPlan(generateDto, fitnessProfile);
-        const workoutPlan = new this.workoutPlanModel({
-            ...workoutPlanData,
-            userId,
-        });
-        return workoutPlan.save();
     }
     async getUserWorkoutPlans(userId) {
         return this.workoutPlanModel.find({ userId }).sort({ createdAt: -1 });
@@ -71,12 +97,22 @@ let WorkoutsService = class WorkoutsService {
         return workoutPlan;
     }
     async rateWorkoutPlan(workoutPlanId, rating) {
-        const workoutPlan = await this.getWorkoutPlan(workoutPlanId);
-        workoutPlan.rating = rating;
-        return workoutPlan.save();
+        try {
+            const workoutPlan = await this.getWorkoutPlan(workoutPlanId);
+            workoutPlan.rating = rating;
+            return await workoutPlan.save();
+        }
+        catch (error) {
+            if (error instanceof mongoose_2.Error.ValidationError) {
+                throw new common_1.BadRequestException('Invalid rating format');
+            }
+            throw error;
+        }
     }
     async deleteWorkoutPlan(workoutPlanId) {
-        const result = await this.workoutPlanModel.deleteOne({ _id: workoutPlanId });
+        const result = await this.workoutPlanModel.deleteOne({
+            _id: workoutPlanId,
+        });
         if (result.deletedCount === 0) {
             throw new common_1.NotFoundException('Workout plan not found');
         }
@@ -89,15 +125,15 @@ let WorkoutsService = class WorkoutsService {
     async getRecommendedWorkoutPlans(userId) {
         try {
             const profile = await this.getFitnessProfile(userId);
-            const allWorkoutPlans = await this.workoutPlanModel.find({
+            const allWorkoutPlans = await this.workoutPlanModel
+                .find({
                 difficulty: profile.fitnessLevel,
-            }).limit(5);
+            })
+                .limit(5);
             return allWorkoutPlans;
         }
         catch (error) {
-            return this.workoutPlanModel.find()
-                .sort({ rating: -1 })
-                .limit(5);
+            return this.workoutPlanModel.find().sort({ rating: -1 }).limit(5);
         }
     }
 };

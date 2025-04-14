@@ -45,15 +45,34 @@ export class WorkoutsController {
     @Body() createFitnessProfileDto: CreateFitnessProfileDto,
   ) {
     try {
-      // The class-validator decorators will handle validation automatically
+      // NestJS validation pipe will handle basic validation
       return this.workoutsService.createOrUpdateFitnessProfile(
         req.user._id.toString(),
         createFitnessProfileDto,
       );
     } catch (error) {
-      // Pass through BadRequestExceptions from validation
-      if (error instanceof HttpException) {
+      // Handle validation errors
+      if (error.name === 'BadRequestException' || error.status === 400) {
         throw error;
+      }
+
+      // Handle MongoDB validation errors
+      if (error.name === 'ValidationError') {
+        const messages = Object.values(error.errors).map(
+          (err: any) => err.message,
+        );
+        throw new HttpException(
+          { message: 'Validation failed', errors: messages },
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      // Handle the specific error from MongoDB when an enum value is invalid
+      if (error.name === 'MongoServerError' && error.code === 121) {
+        throw new HttpException(
+          'Invalid value provided for fitness level or fitness goals. Please use only valid values.',
+          HttpStatus.BAD_REQUEST,
+        );
       }
 
       // Handle other errors
@@ -116,9 +135,28 @@ export class WorkoutsController {
         generateWorkoutPlanDto,
       );
     } catch (error) {
-      // Pass through BadRequestExceptions from validation
-      if (error instanceof HttpException) {
+      // Handle validation errors
+      if (error.name === 'BadRequestException' || error.status === 400) {
         throw error;
+      }
+
+      // Handle MongoDB validation errors
+      if (error.name === 'ValidationError') {
+        const messages = Object.values(error.errors).map(
+          (err: any) => err.message,
+        );
+        throw new HttpException(
+          { message: 'Validation failed', errors: messages },
+          HttpStatus.BAD_REQUEST,
+        );
+      }
+
+      // Handle the specific error from MongoDB when an enum value is invalid
+      if (error.name === 'MongoServerError' && error.code === 121) {
+        throw new HttpException(
+          'Invalid value provided for workout type or difficulty. Please use only valid values.',
+          HttpStatus.BAD_REQUEST,
+        );
       }
 
       // Handle AI service errors specifically
