@@ -9,7 +9,7 @@ import { Types } from 'mongoose';
 import { ParseObjectIdPipe } from '@nestjs/mongoose';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 @ApiTags('Sleep Tracking')
-@ApiBearerAuth('JWT')
+@ApiBearerAuth()
 @Controller('sleep')
 export class SleepController {
   constructor(private sleepService: SleepService) {}
