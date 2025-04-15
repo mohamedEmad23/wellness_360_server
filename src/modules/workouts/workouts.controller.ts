@@ -27,173 +27,82 @@ import { GenerateWorkoutPlanDto } from '../workouts/dto/generate-workout-plan.dt
 export class WorkoutsController {
   constructor(private readonly workoutsService: WorkoutsService) {}
 
+  private handleServiceError(error: any, context: string) {
+    if (error instanceof HttpException) throw error;
+
+    if (error.name === 'ValidationError') {
+      const messages = Object.values(error.errors).map((e: any) => e.message);
+      throw new HttpException({ message: 'Validation failed', errors: messages }, HttpStatus.BAD_REQUEST);
+    }
+
+    if (error.name === 'MongoServerError' && error.code === 121) {
+      throw new HttpException('Invalid enum value provided.', HttpStatus.BAD_REQUEST);
+    }
+
+    if (error.message?.includes('Failed to generate') || error.message?.includes('parsing')) {
+      throw new HttpException('AI service error. Try again later.', HttpStatus.SERVICE_UNAVAILABLE);
+    }
+
+    throw new HttpException(`Failed to ${context}: ${error.message}`, HttpStatus.INTERNAL_SERVER_ERROR);
+  }
+
   @UseGuards(JwtAuthGuard)
   @Post('profile')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Create or update fitness profile' })
-  @ApiResponse({
-    status: 201,
-    description:
-      'The fitness profile has been successfully created or updated.',
-  })
-  @ApiResponse({
-    status: 400,
-    description: 'Invalid input data.',
-  })
+  @ApiResponse({ status: 201, description: 'Profile created/updated successfully.' })
+  @ApiResponse({ status: 400, description: 'Invalid input.' })
   async createOrUpdateFitnessProfile(
     @Request() req,
-    @Body() createFitnessProfileDto: CreateFitnessProfileDto,
+    @Body() dto: CreateFitnessProfileDto,
   ) {
     try {
-      // NestJS validation pipe will handle basic validation
-      return this.workoutsService.createOrUpdateFitnessProfile(
-        req.user._id.toString(),
-        createFitnessProfileDto,
-      );
+      return this.workoutsService.createOrUpdateFitnessProfile(req.user._id.toString(), dto);
     } catch (error) {
-      // Handle validation errors
-      if (error.name === 'BadRequestException' || error.status === 400) {
-        throw error;
-      }
-
-      // Handle MongoDB validation errors
-      if (error.name === 'ValidationError') {
-        const messages = Object.values(error.errors).map(
-          (err: any) => err.message,
-        );
-        throw new HttpException(
-          { message: 'Validation failed', errors: messages },
-          HttpStatus.BAD_REQUEST,
-        );
-      }
-
-      // Handle the specific error from MongoDB when an enum value is invalid
-      if (error.name === 'MongoServerError' && error.code === 121) {
-        throw new HttpException(
-          'Invalid value provided for fitness level or fitness goals. Please use only valid values.',
-          HttpStatus.BAD_REQUEST,
-        );
-      }
-
-      // Handle other errors
-      throw new HttpException(
-        `Failed to create fitness profile: ${error.message}`,
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+      this.handleServiceError(error, 'create fitness profile');
     }
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('profile')
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Get user fitness profile' })
-  @ApiResponse({
-    status: 200,
-    description: 'Returns the user fitness profile.',
-  })
-  @ApiResponse({
-    status: 404,
-    description: 'Fitness profile not found.',
-  })
+  @ApiOperation({ summary: 'Get fitness profile' })
+  @ApiResponse({ status: 200, description: 'Returns user fitness profile.' })
+  @ApiResponse({ status: 404, description: 'Profile not found.' })
   async getFitnessProfile(@Request() req) {
     try {
       return this.workoutsService.getFitnessProfile(req.user._id.toString());
     } catch (error) {
-      if (error instanceof HttpException) {
-        throw error;
-      }
-      throw new HttpException(
-        `Failed to retrieve fitness profile: ${error.message}`,
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+      this.handleServiceError(error, 'retrieve fitness profile');
     }
   }
 
   @UseGuards(JwtAuthGuard)
   @Post('generate')
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Generate a workout plan using AI' })
-  @ApiResponse({
-    status: 201,
-    description: 'The workout plan has been successfully generated.',
-  })
-  @ApiResponse({
-    status: 400,
-    description: 'Invalid input data.',
-  })
-  @ApiResponse({
-    status: 500,
-    description: 'Error generating workout plan.',
-  })
+  @ApiOperation({ summary: 'Generate AI-based workout plan' })
+  @ApiResponse({ status: 201, description: 'Workout plan generated successfully.' })
   async generateWorkoutPlan(
     @Request() req,
-    @Body() generateWorkoutPlanDto: GenerateWorkoutPlanDto,
+    @Body() dto: GenerateWorkoutPlanDto,
   ) {
     try {
-      return this.workoutsService.generateWorkoutPlan(
-        req.user._id.toString(),
-        generateWorkoutPlanDto,
-      );
+      return this.workoutsService.generateWorkoutPlan(req.user._id.toString(), dto);
     } catch (error) {
-      // Handle validation errors
-      if (error.name === 'BadRequestException' || error.status === 400) {
-        throw error;
-      }
-
-      // Handle MongoDB validation errors
-      if (error.name === 'ValidationError') {
-        const messages = Object.values(error.errors).map(
-          (err: any) => err.message,
-        );
-        throw new HttpException(
-          { message: 'Validation failed', errors: messages },
-          HttpStatus.BAD_REQUEST,
-        );
-      }
-
-      // Handle the specific error from MongoDB when an enum value is invalid
-      if (error.name === 'MongoServerError' && error.code === 121) {
-        throw new HttpException(
-          'Invalid value provided for workout type or difficulty. Please use only valid values.',
-          HttpStatus.BAD_REQUEST,
-        );
-      }
-
-      // Handle AI service errors specifically
-      if (
-        error.message?.includes('Failed to generate') ||
-        error.message?.includes('parsing')
-      ) {
-        throw new HttpException(
-          'Error generating workout plan. Please try again later.',
-          HttpStatus.SERVICE_UNAVAILABLE,
-        );
-      }
-
-      // Handle other errors
-      throw new HttpException(
-        `Failed to generate workout plan: ${error.message}`,
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+      this.handleServiceError(error, 'generate workout plan');
     }
   }
 
   @UseGuards(JwtAuthGuard)
   @Get('plans')
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Get all user workout plans' })
-  @ApiResponse({
-    status: 200,
-    description: 'Returns all workout plans for the user.',
-  })
+  @ApiOperation({ summary: 'Get all workout plans' })
+  @ApiResponse({ status: 200, description: 'Returns all user workout plans.' })
   async getUserWorkoutPlans(@Request() req) {
     try {
       return this.workoutsService.getUserWorkoutPlans(req.user._id.toString());
     } catch (error) {
-      throw new HttpException(
-        `Failed to retrieve workout plans: ${error.message}`,
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+      this.handleServiceError(error, 'retrieve workout plans');
     }
   }
 
@@ -201,25 +110,12 @@ export class WorkoutsController {
   @Get('plans/:id')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get a specific workout plan' })
-  @ApiResponse({
-    status: 200,
-    description: 'Returns the specified workout plan.',
-  })
-  @ApiResponse({
-    status: 404,
-    description: 'Workout plan not found.',
-  })
+  @ApiResponse({ status: 200, description: 'Returns the specified workout plan.' })
   async getWorkoutPlan(@Param('id') id: string) {
     try {
       return this.workoutsService.getWorkoutPlan(id);
     } catch (error) {
-      if (error instanceof HttpException) {
-        throw error;
-      }
-      throw new HttpException(
-        `Failed to retrieve workout plan: ${error.message}`,
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+      this.handleServiceError(error, 'retrieve workout plan');
     }
   }
 
@@ -227,26 +123,13 @@ export class WorkoutsController {
   @Delete('plans/:id')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Delete a workout plan' })
-  @ApiResponse({
-    status: 200,
-    description: 'The workout plan has been successfully deleted.',
-  })
-  @ApiResponse({
-    status: 404,
-    description: 'Workout plan not found.',
-  })
+  @ApiResponse({ status: 200, description: 'Workout plan deleted successfully.' })
   async deleteWorkoutPlan(@Param('id') id: string) {
     try {
       await this.workoutsService.deleteWorkoutPlan(id);
       return { message: 'Workout plan deleted successfully' };
     } catch (error) {
-      if (error instanceof HttpException) {
-        throw error;
-      }
-      throw new HttpException(
-        `Failed to delete workout plan: ${error.message}`,
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+      this.handleServiceError(error, 'delete workout plan');
     }
   }
 
@@ -254,61 +137,31 @@ export class WorkoutsController {
   @Put('plans/:id/rate')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Rate a workout plan' })
-  @ApiResponse({
-    status: 200,
-    description: 'The workout plan has been successfully rated.',
-  })
-  @ApiResponse({
-    status: 404,
-    description: 'Workout plan not found.',
-  })
+  @ApiResponse({ status: 200, description: 'Workout plan rated successfully.' })
   async rateWorkoutPlan(
     @Param('id') id: string,
     @Body('rating') rating: number,
   ) {
     try {
       if (rating < 1 || rating > 5 || !Number.isInteger(rating)) {
-        throw new HttpException(
-          'Rating must be an integer between 1 and 5',
-          HttpStatus.BAD_REQUEST,
-        );
+        throw new HttpException('Rating must be an integer between 1 and 5', HttpStatus.BAD_REQUEST);
       }
-
       return this.workoutsService.rateWorkoutPlan(id, rating);
     } catch (error) {
-      if (error instanceof HttpException) {
-        throw error;
-      }
-      throw new HttpException(
-        `Failed to rate workout plan: ${error.message}`,
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+      this.handleServiceError(error, 'rate workout plan');
     }
   }
 
   @UseGuards(JwtAuthGuard)
   @Post('plans/:id/track')
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Track usage of a workout plan' })
-  @ApiResponse({
-    status: 200,
-    description: 'The workout plan usage has been tracked.',
-  })
-  @ApiResponse({
-    status: 404,
-    description: 'Workout plan not found.',
-  })
+  @ApiOperation({ summary: 'Track workout plan usage' })
+  @ApiResponse({ status: 200, description: 'Workout plan usage tracked.' })
   async trackWorkoutPlanUsage(@Param('id') id: string) {
     try {
       return this.workoutsService.trackWorkoutPlanUsage(id);
     } catch (error) {
-      if (error instanceof HttpException) {
-        throw error;
-      }
-      throw new HttpException(
-        `Failed to track workout plan usage: ${error.message}`,
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+      this.handleServiceError(error, 'track workout plan usage');
     }
   }
 
@@ -316,20 +169,12 @@ export class WorkoutsController {
   @Get('recommended')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get recommended workout plans' })
-  @ApiResponse({
-    status: 200,
-    description: 'Returns recommended workout plans for the user.',
-  })
+  @ApiResponse({ status: 200, description: 'Returns recommended workout plans.' })
   async getRecommendedWorkoutPlans(@Request() req) {
     try {
-      return this.workoutsService.getRecommendedWorkoutPlans(
-        req.user._id.toString(),
-      );
+      return this.workoutsService.getRecommendedWorkoutPlans(req.user._id.toString());
     } catch (error) {
-      throw new HttpException(
-        `Failed to get recommended workout plans: ${error.message}`,
-        HttpStatus.INTERNAL_SERVER_ERROR,
-      );
+      this.handleServiceError(error, 'get recommended workout plans');
     }
   }
 }

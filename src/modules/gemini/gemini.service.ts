@@ -34,7 +34,6 @@ export class GeminiService {
         topP: 0.8,
         topK: 40,
         maxOutputTokens: 8000,
-        responseMimeType: 'application/json',
       },
     });
 
@@ -157,6 +156,7 @@ IMPORTANT: Return a JSON object that exactly matches the structure shown above, 
       });
 
       const responseText = generationResult.response.text();
+  
       return JSON.parse(responseText);
     } catch (error) {
       this.logger.error('Error generating structured workout plan', error);
