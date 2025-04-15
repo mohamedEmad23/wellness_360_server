@@ -11,7 +11,7 @@ import {
   WorkoutPlan,
   WorkoutPlanSchema,
 } from '../../infrastructure/database/schemas/workout-plan.schema';
-import { GeminiModule } from '../../gemini/gemini.module';
+import { GeminiModule } from '../gemini/gemini.module';
 
 @Module({
   imports: [

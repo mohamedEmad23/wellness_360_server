@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { GenerateWorkoutPlanDto } from '../dto/generate-workout-plan.dto';
 import { FitnessProfile } from '../interfaces/fitness-profile.interface';
 import { WorkoutDay, WorkoutPlan } from '../interfaces/workout-plan.interface';
-import { GeminiService } from '../../../gemini/gemini.service';
+import { GeminiService } from '../../gemini/gemini.service';
 
 @Injectable()
 export class AiWorkoutService {
