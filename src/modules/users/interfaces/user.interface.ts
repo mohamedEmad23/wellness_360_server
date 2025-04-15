@@ -5,6 +5,15 @@ export interface User extends Document {
   password: string;
   firstName: string;
   lastName: string;
+  gender: 'male' | 'female';
+  dob: Date;
+  age: number;
+  height: number;
+  weight: number;
+  activityLevel: 'sedentary' | 'lightly active' | 'moderately active' | 'very active';
+  goal: 'lose' | 'maintain' | 'gain';
+  dailyCalories: number;
+  caloriesLeft: number;
   currentOtp?: string;
   emailVerificationOtpCreatedAt?: Date;
   emailVerificationOtpExpiresAt?: Date;

@@ -6,6 +6,7 @@ import { DatabaseModule } from './infrastructure/database/database.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { WorkoutsModule } from './modules/workouts/workouts.module';
+import { UserActivityModule } from './modules/user-activity/userActivity.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { WorkoutsModule } from './modules/workouts/workouts.module';
     DatabaseModule,
     AuthModule,
     UsersModule,
+    UserActivityModule,
     WorkoutsModule,
   ],
   controllers: [AppController],

@@ -1,5 +1,15 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsNotEmpty, IsString, MinLength } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import {
+  IsEmail,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsNumber,
+  Min,
+  MinLength,
+  IsEnum,
+  IsDateString,
+} from 'class-validator';
 
 export class RegisterDto {
   @ApiProperty({
@@ -34,6 +44,58 @@ export class RegisterDto {
   @IsNotEmpty()
   @MinLength(8)
   password: string;
+
+  @ApiPropertyOptional({ enum: ['male', 'female'], example: 'male' })
+  @IsOptional()
+  @IsEnum(['male', 'female'])
+  gender?: 'male' | 'female';
+
+  @ApiPropertyOptional({ example: '2002-05-20' })
+  @IsOptional()
+  @IsDateString()
+  dob?: Date;
+
+  @ApiPropertyOptional({ example: 22 })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  age?: number;
+
+  @ApiProperty({ example: 175, description: 'Height in centimeters' })
+  @IsNumber()
+  @Min(50)
+  height: number;
+
+  @ApiProperty({ example: 70, description: 'Weight in kilograms' })
+  @IsNumber()
+  @Min(20)
+  weight: number;
+
+  @ApiPropertyOptional({
+    enum: ['sedentary', 'lightly active', 'moderately active', 'very active'],
+    example: 'moderately active',
+  })
+  @IsOptional()
+  @IsEnum(['sedentary', 'lightly active', 'moderately active', 'very active'])
+  activityLevel?: string;
+
+  @ApiPropertyOptional({
+    enum: ['lose', 'maintain', 'gain'],
+    example: 'maintain',
+  })
+  @IsOptional()
+  @IsEnum(['lose', 'maintain', 'gain'])
+  goal?: 'lose' | 'maintain' | 'gain';
+
+  @ApiPropertyOptional({ example: 3000 })
+  @IsOptional()
+  @IsNumber()
+  dailyCalories?: number;
+
+  @ApiPropertyOptional({ example: 3000 })
+  @IsOptional()
+  @IsNumber()
+  caloriesLeft?: number;
 
   constructor(partial: Partial<RegisterDto> = {}) {
     Object.assign(this, partial);
