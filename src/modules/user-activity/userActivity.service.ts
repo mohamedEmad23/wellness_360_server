@@ -69,6 +69,7 @@ export class UserActivityService {
       const populatedActivity = a.activity as Activity;
 
       return {
+        _id: a._id,
         activity: populatedActivity.name,
         duration: a.duration,
         title: a.title,
