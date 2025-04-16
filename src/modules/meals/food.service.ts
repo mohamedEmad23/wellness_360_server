@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common'; 
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Food, FoodDocument } from '../../infrastructure/database/schemas/food.schema';
@@ -58,10 +58,21 @@ export class FoodService {
     const food = await this.foodModel.findOne({ name: foodName });
     if (!food) throw new NotFoundException('Food item not found with that name');
 
+    // Subtract calories, protein, carbs, fats
     user.caloriesLeft = (user.caloriesLeft ?? user.dailyCalories) - food.calories;
-    if (user.caloriesLeft < 0) user.caloriesLeft = 0;
+    user.proteinLeft = (user.proteinLeft ?? user.dailyProtein) - food.protein;
+    user.carbsLeft = (user.carbsLeft ?? user.dailyCarbs) - food.carbs;
+    user.fatsLeft = (user.fatsLeft ?? user.dailyFats) - food.fats;
+
+    // Clamp values to 0
+    user.caloriesLeft = Math.max(0, user.caloriesLeft);
+    user.proteinLeft = Math.max(0, user.proteinLeft);
+    user.carbsLeft = Math.max(0, user.carbsLeft);
+    user.fatsLeft = Math.max(0, user.fatsLeft);
+
     await user.save();
 
+    // Log the food consumption
     const log = await this.foodLogModel.findOne({ user: user._id });
     if (log) {
       log.entries.push({ food: food, quantity: 1, eatenAt: new Date() });
@@ -79,6 +90,9 @@ export class FoodService {
         foodName: food.name,
         caloriesConsumed: food.calories,
         updatedCaloriesLeft: Math.round(user.caloriesLeft),
+        proteinLeft: Math.round(user.proteinLeft),
+        carbsLeft: Math.round(user.carbsLeft),
+        fatsLeft: Math.round(user.fatsLeft),
       },
     };
   }
@@ -89,12 +103,23 @@ export class FoodService {
     if (!user) throw new NotFoundException('User not found');
     
     const caloriesLeft = user.caloriesLeft ?? user.dailyCalories;
-    const totalCaloriesConsumed = user.dailyCalories - caloriesLeft;
-    
+    const proteinLeft = user.proteinLeft ?? user.dailyProtein;
+    const carbsLeft = user.carbsLeft ?? user.dailyCarbs;
+    const fatsLeft = user.fatsLeft ?? user.dailyFats;
+
     return {
       dailyCalories: user.dailyCalories,
       caloriesLeft: Math.round(caloriesLeft),
-      caloriesConsumed: Math.round(totalCaloriesConsumed)
+      caloriesConsumed: Math.round(user.dailyCalories - caloriesLeft),
+      dailyProtein: user.dailyProtein,
+      proteinLeft: Math.round(proteinLeft),
+      proteinConsumed: Math.round(user.dailyProtein - proteinLeft),
+      dailyCarbs: user.dailyCarbs,
+      carbsLeft: Math.round(carbsLeft),
+      carbsConsumed: Math.round(user.dailyCarbs - carbsLeft),
+      dailyFats: user.dailyFats,
+      fatsLeft: Math.round(fatsLeft),
+      fatsConsumed: Math.round(user.dailyFats - fatsLeft),
     };
   }
 
@@ -104,9 +129,12 @@ export class FoodService {
     if (!user) throw new NotFoundException('User not found');
 
     user.caloriesLeft = user.dailyCalories;
+    user.proteinLeft = user.dailyProtein;
+    user.carbsLeft = user.dailyCarbs;
+    user.fatsLeft = user.dailyFats;
     await user.save();
 
-    return { message: 'Calories reset for the day.' };
+    return { message: 'Calories and macros reset for the day.' };
   }
 
   async logMeal(user_id: string, foodName: string, date = new Date(), quantity = 1) {
@@ -118,8 +146,20 @@ export class FoodService {
     if (!food) throw new NotFoundException('Food not found');
   
     const totalCalories = food.calories * quantity;
+    const totalProtein = food.protein * quantity;
+    const totalCarbs = food.carbs * quantity;
+    const totalFats = food.fats * quantity;
+
     user.caloriesLeft = (user.caloriesLeft ?? user.dailyCalories) - totalCalories;
-    if (user.caloriesLeft < 0) user.caloriesLeft = 0;
+    user.proteinLeft = (user.proteinLeft ?? user.dailyProtein) - totalProtein;
+    user.carbsLeft = (user.carbsLeft ?? user.dailyCarbs) - totalCarbs;
+    user.fatsLeft = (user.fatsLeft ?? user.dailyFats) - totalFats;
+
+    // Clamp values to 0
+    user.caloriesLeft = Math.max(0, user.caloriesLeft);
+    user.proteinLeft = Math.max(0, user.proteinLeft);
+    user.carbsLeft = Math.max(0, user.carbsLeft);
+    user.fatsLeft = Math.max(0, user.fatsLeft);
     await user.save();
   
     const log = await this.foodLogModel.findOne({ user: user._id });
@@ -146,7 +186,13 @@ export class FoodService {
       quantity,
       date,
       caloriesSubtracted: totalCalories,
+      proteinSubtracted: totalProtein,
+      carbsSubtracted: totalCarbs,
+      fatsSubtracted: totalFats,
       caloriesLeft: user.caloriesLeft,
+      proteinLeft: user.proteinLeft,
+      carbsLeft: user.carbsLeft,
+      fatsLeft: user.fatsLeft,
     };
   }
 
@@ -176,6 +222,9 @@ export class FoodService {
     const history = log.entries.map(entry => ({
       foodName: entry.food.name,
       calories: entry.food.calories,
+      protein: entry.food.protein,
+      carbs: entry.food.carbs,
+      fats: entry.food.fats,
       quantity: entry.quantity,
       eatenAt: entry.eatenAt,
     }));

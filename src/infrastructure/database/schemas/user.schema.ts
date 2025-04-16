@@ -54,7 +54,26 @@ export class User {
   dailyCalories?: number;
 
   @Prop({ default: function () { return this.dailyCalories; } })
-  caloriesLeft?: number; 
+  caloriesLeft?: number;
+  
+  // Macronutrient tracking
+  @Prop({ default: 150 }) // you can adjust based on weight/goal
+  dailyProtein?: number;
+
+  @Prop({ default: 200 })
+  dailyCarbs?: number;
+
+  @Prop({ default: 70 })
+  dailyFats?: number;
+
+  @Prop({ default: function () { return this.dailyProtein; } })
+  proteinLeft?: number;
+
+  @Prop({ default: function () { return this.dailyCarbs; } })
+  carbsLeft?: number;
+
+  @Prop({ default: function () { return this.dailyFats; } })
+  fatsLeft?: number;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

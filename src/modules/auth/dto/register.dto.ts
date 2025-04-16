@@ -97,6 +97,37 @@ export class RegisterDto {
   @IsNumber()
   caloriesLeft?: number;
 
+  @ApiPropertyOptional({ example: 150 })
+  @IsOptional()
+  @IsNumber()
+  dailyProtein?: number;
+
+  @ApiPropertyOptional({ example: 200 })
+  @IsOptional()
+  @IsNumber()
+  dailyCarbs?: number;
+
+  @ApiPropertyOptional({ example: 70 })
+  @IsOptional()
+  @IsNumber()
+  dailyFats?: number;
+
+  @ApiPropertyOptional({ example: 150 })
+  @IsOptional()
+  @IsNumber()
+  proteinLeft?: number;
+
+  @ApiPropertyOptional({ example: 200 })
+  @IsOptional()
+  @IsNumber()
+  carbsLeft?: number;
+
+  @ApiPropertyOptional({ example: 70 })
+  @IsOptional()
+  @IsNumber()
+  fatsLeft?: number;
+  
+
   constructor(partial: Partial<RegisterDto> = {}) {
     Object.assign(this, partial);
   }

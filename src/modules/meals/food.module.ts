@@ -5,16 +5,18 @@ import { FoodController } from './food.controller';
 import { Food, FoodSchema } from '../../infrastructure/database/schemas/food.schema';
 import { User, UserSchema } from '../../infrastructure/database/schemas/user.schema';
 import { FoodLog, FoodLogSchema } from 'src/infrastructure/database/schemas/foodLog';
+import { SpoonacularModule } from './spoonacular.module';
 
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: Food.name, schema: FoodSchema },
       { name: User.name, schema: UserSchema },
-      { name: FoodLog.name, schema: FoodLogSchema }, // ✅ Corrected this line
+      { name: FoodLog.name, schema: FoodLogSchema },
     ]),
+    SpoonacularModule, // <-- Add this
   ],
-  controllers: [FoodController],
   providers: [FoodService],
+  controllers: [FoodController],
 })
 export class FoodModule {}
