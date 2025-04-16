@@ -1,116 +1,125 @@
-import { Controller,Get,Patch,Post,Body,Put,HttpCode,HttpStatus,Delete,Param,UseGuards,Request } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Patch,
+  Post,
+  Body,
+  HttpCode,
+  HttpStatus,
+  Delete,
+  Param,
+  UseGuards,
+} from '@nestjs/common';
 import { SleepService } from './sleep.service';
-import {createSleepLogDTO} from '../sleep/dto/create-sleepLog.dto'
-import {updateSleepLogDTO} from '../sleep/dto/update-sleepLog.dto'
-import { ApiTags, ApiOperation, ApiResponse,ApiParam,ApiBody,ApiBearerAuth,ApiUnauthorizedResponse,ApiForbiddenResponse,ApiNotFoundResponse } from '@nestjs/swagger';
-import { sleepLogSchema } from 'src/infrastructure/database/schemas/sleepLog.schema';
-import { sleepLogInterface } from './interfaces/sleepLog.interface';
+import { createSleepLogDTO } from '../sleep/dto/create-sleepLog.dto';
+import { updateSleepLogDTO } from '../sleep/dto/update-sleepLog.dto';
+import {
+  ApiTags,
+  ApiOperation,
+  ApiResponse,
+  ApiParam,
+  ApiBody,
+  ApiBearerAuth,
+  ApiUnauthorizedResponse,
+  ApiForbiddenResponse,
+  ApiNotFoundResponse,
+} from '@nestjs/swagger';
 import { Types } from 'mongoose';
 import { ParseObjectIdPipe } from '@nestjs/mongoose';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { GetUser } from 'src/common/decorators/getUser.decorator';
+
 @ApiTags('Sleep Tracking')
 @ApiBearerAuth()
 @Controller('sleep')
 export class SleepController {
-  constructor(private sleepService: SleepService) {}
-  
-  @Get("avgDuration")
-  @HttpCode(HttpStatus.OK)
+  constructor(private readonly sleepService: SleepService) {}
+
+  @Get('average-duration')
   @UseGuards(JwtAuthGuard)
-  @ApiOperation({ 
-    summary: 'Get Average Sleep Duration',
-    description: 'Retrieves the average sleep duration for the authenticated user'
-  })
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Get Average Sleep Duration' })
   @ApiResponse({
     status: HttpStatus.OK,
-    description: 'Average sleep duration retrieved successfully',
+    description: 'Returns average sleep duration for authenticated user.',
     schema: {
       type: 'object',
       properties: {
-        avgDuration: { type: 'number', example: 7.5, description: 'Average sleep duration in hours' }
-      }
-    }
+        avg_duration: { type: 'number', example: 7.5 },
+      },
+    },
   })
   @ApiUnauthorizedResponse({ description: 'Unauthorized: JWT token is missing or invalid' })
-  getAVGtime(@Request() req) {
-    return this.sleepService.avgDuration(req.user._id);
+  getAverageDuration(@GetUser('userId') userId: string) {
+    return this.sleepService.avgDuration(userId);
   }
-  
-  @Get("avgRating")
-  @HttpCode(HttpStatus.OK)
+
+  @Get('average-rating')
   @UseGuards(JwtAuthGuard)
-  @ApiOperation({ 
-    summary: 'Get Average Sleep Rating',
-    description: 'Retrieves the average sleep quality rating for the authenticated user'
-  })
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Get Average Sleep Rating' })
   @ApiResponse({
     status: HttpStatus.OK,
-    description: 'Average sleep rating retrieved successfully',
+    description: 'Returns average sleep rating for authenticated user.',
     schema: {
       type: 'object',
       properties: {
-        avgRating: { type: 'number', example: 4.2, description: 'Average sleep quality rating on a scale of 1-5' }
-      }
-    }
+        avg_rating: { type: 'number', example: 4.2 },
+      },
+    },
   })
   @ApiUnauthorizedResponse({ description: 'Unauthorized: JWT token is missing or invalid' })
-  getAVGrating(@Request() req) {
-    return this.sleepService.avgRating(req.user._id);
+  getAverageRating(@GetUser('userId') userId: string) {
+    return this.sleepService.avgRating(userId);
   }
-  
+
   @Get()
-  @HttpCode(HttpStatus.OK)
   @UseGuards(JwtAuthGuard)
-  @ApiOperation({ 
-    summary: 'Get Sleep Logs',
-    description: 'Retrieves all sleep logs for the authenticated user'
-  })
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Get All Sleep Logs' })
   @ApiResponse({
     status: HttpStatus.OK,
-    description: 'Sleep logs retrieved successfully',
+    description: 'Returns all sleep logs for authenticated user.',
     schema: {
       type: 'array',
       items: {
         type: 'object',
         properties: {
-          _id: { type: 'string', example: '60d9f3a94f9a8d26f45b5e3c' },
-          userId: { type: 'string', example: '60d9f3a94f9a8d26f45b5e3d' },
+          _id: { type: 'string' },
+          userID: { type: 'string' },
           startTime: { type: 'string', format: 'date-time' },
           endTime: { type: 'string', format: 'date-time' },
           duration: { type: 'number', example: 8.5 },
-          quality: { type: 'number', example: 4 },
+          rating: { type: 'number', example: 4 },
           notes: { type: 'string', example: 'Slept well, but woke up once' },
           createdAt: { type: 'string', format: 'date-time' },
-          updatedAt: { type: 'string', format: 'date-time' }
-        }
-      }
-    }
+          updatedAt: { type: 'string', format: 'date-time' },
+        },
+      },
+    },
   })
   @ApiUnauthorizedResponse({ description: 'Unauthorized: JWT token is missing or invalid' })
-  getLogs(@Request() req) {
-    return this.sleepService.getLogs(req.user._id);
+  getLogs(@GetUser('userId') userId: string) {
+    return this.sleepService.getLogs(userId);
   }
-  
-  @Post("add")
-  @HttpCode(HttpStatus.CREATED)
+
+  @Post('add')
   @UseGuards(JwtAuthGuard)
-  @ApiOperation({ 
-    summary: 'Add Sleep Log',
-    description: 'Creates a new sleep log for the authenticated user'
-  })
-  @ApiBody({ 
+  @HttpCode(HttpStatus.CREATED)
+  @ApiOperation({ summary: 'Add Sleep Log' })
+  @ApiBody({
     type: createSleepLogDTO,
     description: 'Sleep log data',
     examples: {
-      example1: {
+      default: {
         value: {
           startTime: '2025-04-13T22:00:00Z',
           endTime: '2025-04-14T06:30:00Z',
-          quality: 4,
-          notes: 'Good sleep, woke up refreshed'
-        }
-      }
-    }
+          rating: 4,
+          notes: 'Good sleep, woke up refreshed',
+        },
+      },
+    },
   })
   @ApiResponse({
     status: HttpStatus.CREATED,
@@ -118,100 +127,89 @@ export class SleepController {
     schema: {
       type: 'object',
       properties: {
-        _id: { type: 'string', example: '60d9f3a94f9a8d26f45b5e3c' },
-        userId: { type: 'string', example: '60d9f3a94f9a8d26f45b5e3d' },
+        _id: { type: 'string' },
+        userID: { type: 'string' },
         startTime: { type: 'string', format: 'date-time' },
         endTime: { type: 'string', format: 'date-time' },
-        duration: { type: 'number', example: 8.5 },
-        quality: { type: 'number', example: 4 },
-        notes: { type: 'string', example: 'Good sleep, woke up refreshed' },
+        duration: { type: 'number' },
+        rating: { type: 'number' },
+        notes: { type: 'string' },
         createdAt: { type: 'string', format: 'date-time' },
-        updatedAt: { type: 'string', format: 'date-time' }
-      }
-    }
+      },
+    },
   })
   @ApiUnauthorizedResponse({ description: 'Unauthorized: JWT token is missing or invalid' })
-  addLog(@Request() req, @Body() data: createSleepLogDTO) {
-    return this.sleepService.create(req.user._id, data);
+  addLog(@GetUser('userId') userId: string, @Body() data: createSleepLogDTO) {
+    return this.sleepService.create(userId, data);
   }
-  
-  @Delete(":id")
+
+  @Delete(':id')
   @UseGuards(JwtAuthGuard)
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ 
-    summary: 'Delete Sleep Log',
-    description: 'Deletes a specific sleep log by ID'
-  })
+  @ApiOperation({ summary: 'Delete Sleep Log' })
   @ApiParam({
     name: 'id',
+    description: 'Sleep log ID (MongoDB ObjectId)',
     type: 'string',
-    description: 'The MongoDB ObjectId of the sleep log to delete',
-    example: '60d9f3a94f9a8d26f45b5e3c'
+    example: '60d9f3a94f9a8d26f45b5e3c',
   })
   @ApiResponse({
     status: HttpStatus.OK,
-    description: 'Sleep Log with ID:60d9f3a94f9a8d26f45b5e3c Successfully Deleted',
+    description: 'Sleep log deleted successfully',
     schema: {
       type: 'object',
       properties: {
-        success: { type: 'boolean', example: true },
-        message: { type: 'string', example: 'Sleep log deleted successfully' }
-      }
-    }
+        message: { type: 'string', example: 'Sleep log with ID:xxxx deleted' },
+      },
+    },
   })
-  @ApiUnauthorizedResponse({ description: 'Unauthorized: JWT token is missing or invalid' })
   @ApiForbiddenResponse({ description: 'Sleep Log does not belong to user' })
-  @ApiNotFoundResponse({ description: 'Sleep log with specified ID not found' })
-  deleteLog(@Request() req, @Param('id', new ParseObjectIdPipe()) id: Types.ObjectId) {
-    return this.sleepService.delete(id, req.user._id);
+  @ApiNotFoundResponse({ description: 'Sleep log not found' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
+  deleteLog(@GetUser('userId') userId: string, @Param('id', new ParseObjectIdPipe()) id: Types.ObjectId) {
+    return this.sleepService.delete(id, userId);
   }
-  
-  @Patch(":id")
-  @HttpCode(HttpStatus.OK)
+
+  @Patch(':id')
   @UseGuards(JwtAuthGuard)
-  @ApiOperation({ 
-    summary: 'Update Sleep Log',
-    description: 'Updates a specific sleep log by ID'
-  })
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Update Sleep Log' })
   @ApiParam({
     name: 'id',
+    description: 'Sleep log ID (MongoDB ObjectId)',
     type: 'string',
-    description: 'The MongoDB ObjectId of the sleep log to update',
-    example: '60d9f3a94f9a8d26f45b5e3c'
+    example: '60d9f3a94f9a8d26f45b5e3c',
   })
-  @ApiBody({ 
+  @ApiBody({
     type: updateSleepLogDTO,
-    description: 'Updated sleep log data',
+    description: 'Updated sleep log fields',
     examples: {
-      example1: {
+      default: {
         value: {
-          quality: 5,
-          notes: 'Updated: Great sleep, felt very refreshed'
-        }
-      }
-    }
+          rating: 5,
+          notes: 'Updated: Great sleep, felt refreshed',
+        },
+      },
+    },
   })
   @ApiResponse({
     status: HttpStatus.OK,
-    description: 'Sleep log successfully updated',
+    description: 'Sleep log updated successfully',
     schema: {
       type: 'object',
       properties: {
-        message: {
-          type: 'string',
-          example: 'Sleep Log with ID:60d9f3a94f9a8d26f45b5e3c successfully updated',
-        }
-      }
-    }
+        message: { type: 'string', example: 'Sleep log with ID:xxxx updated' },
+      },
+    },
   })
-  @ApiUnauthorizedResponse({ description: 'Unauthorized: JWT token is missing or invalid' })
   @ApiForbiddenResponse({ description: 'Sleep Log does not belong to user' })
-  @ApiNotFoundResponse({ description: 'Sleep log with specified ID not found' })
+  @ApiNotFoundResponse({ description: 'Sleep log not found' })
+  @ApiUnauthorizedResponse({ description: 'Unauthorized' })
   updateLog(
-    @Request() req,
+    @GetUser('userId') userId: string,
     @Param('id', new ParseObjectIdPipe()) id: Types.ObjectId,
-    @Body() updateData: updateSleepLogDTO
+    @Body() updateData: updateSleepLogDTO,
   ) {
-    return this.sleepService.update(id, req.user._id, updateData);
+    return this.sleepService.update(id, userId, updateData);
   }
 }
