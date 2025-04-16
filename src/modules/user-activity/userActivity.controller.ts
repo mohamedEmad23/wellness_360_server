@@ -20,7 +20,7 @@ import { Body, Controller, Post, Get, Param, Delete, UseGuards } from '@nestjs/c
       return this.userActivityService.logActivity(dto, userId);
     }
   
-    @Get(':userId')
+    @Get()
     @ApiOperation({ summary: 'Get all activities logged by a user' })
     @ApiResponse({ status: 200, description: 'Returns the list of user activities' })
     async getUserActivities(@GetUser('userId') userId: string) {
