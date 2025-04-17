@@ -75,51 +75,44 @@ export class AuthService {
     if (!user) {
       throw new UnauthorizedException('Invalid credentials');
     }
-
-    const isPasswordValid = await bcrypt.compare(
-      loginDto.password,
-      user.password,
-    );
+  
+    const isPasswordValid = await bcrypt.compare(loginDto.password, user.password);
     if (!isPasswordValid) {
       throw new UnauthorizedException('Invalid credentials');
     }
-
-    // Check if email is verified
+  
     if (!user.isEmailVerified) {
-      // Generate new OTP if needed
       const otp = this.generateOtp();
       const now = new Date();
-      const expiresAt = new Date(now.getTime() + 5 * 60000); // OTP expires in 5 minutes
-      
-      // Update user with new OTP
+      const expiresAt = new Date(now.getTime() + 5 * 60000);
+  
       await this.usersService.updateById(user._id.toString(), {
         currentOtp: otp,
         emailVerificationOtpCreatedAt: now,
         emailVerificationOtpExpiresAt: expiresAt,
       });
-      
-      // Send OTP to user's email
+  
       await this.sendOtpEmail(user.email, otp);
-      
+  
       throw new UnauthorizedException({
         message: 'Email not verified. A new verification code has been sent to your email.',
         isEmailVerified: false,
       });
     }
-
+  
     const tokens = await this.generateTokens(user._id.toString(), user.email);
+  
     return {
       user: {
-        _id: user._id,
         email: user.email,
         firstName: user.firstName,
         lastName: user.lastName,
         isEmailVerified: user.isEmailVerified,
       },
-      ...tokens,
+      access_token: tokens.accessToken,
     };
   }
-
+  
   private async generateTokens(userId: string, email: string) {
     const accessToken = await this.jwtService.signAsync(
       {

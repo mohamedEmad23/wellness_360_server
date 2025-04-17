@@ -1,10 +1,18 @@
 import { NestFactory } from '@nestjs/core';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
+import * as cookieParser from 'cookie-parser';
 
 async function bootstrap() {
   try {
     const app = await NestFactory.create(AppModule);
+    
+    app.enableCors({
+      origin: 'http://localhost:3000', // your frontend origin
+      credentials: true, // ❗ allow cookies to be sent
+    });
+    // Enable cookie parsing
+    app.use(cookieParser());
 
     const config = new DocumentBuilder()
       .setTitle('Wellness 360 API')
