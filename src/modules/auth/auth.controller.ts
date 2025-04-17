@@ -1,10 +1,11 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import { Body, Controller, Post, Res } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 import { ResendOtpDto } from './dto/resend-otp.dto';
+import { Response } from 'express';
 
 @ApiTags('Authentication')
 @Controller('auth')
@@ -35,8 +36,16 @@ export class AuthController {
     status: 401,
     description: 'Invalid credentials',
   })
-  login(@Body() loginDto: LoginDto) {
-    return this.authService.login(loginDto);
+  async login(@Body() loginDto: LoginDto, @Res({ passthrough: true }) response: Response) {
+    const { user, access_token } = await this.authService.login(loginDto);
+    response.cookie('access_token', access_token, {
+      httpOnly: true,
+      secure: false, 
+      sameSite: 'lax',
+      maxAge: 24 * 60 * 60 * 1000,
+    });
+
+    return user; 
   }
 
   @Post('verify-email')
