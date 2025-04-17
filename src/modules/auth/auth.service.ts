@@ -82,20 +82,8 @@ export class AuthService {
     }
   
     if (!user.isEmailVerified) {
-      const otp = this.generateOtp();
-      const now = new Date();
-      const expiresAt = new Date(now.getTime() + 5 * 60000);
-  
-      await this.usersService.updateById(user._id.toString(), {
-        currentOtp: otp,
-        emailVerificationOtpCreatedAt: now,
-        emailVerificationOtpExpiresAt: expiresAt,
-      });
-  
-      await this.sendOtpEmail(user.email, otp);
-  
       throw new UnauthorizedException({
-        message: 'Email not verified. A new verification code has been sent to your email.',
+        message: 'Email not verified. Please verify your email to login.',
         isEmailVerified: false,
       });
     }
@@ -109,12 +97,12 @@ export class AuthService {
         lastName: user.lastName,
         isEmailVerified: user.isEmailVerified,
       },
-      access_token: tokens.accessToken,
+      access_token: tokens.access_token,
     };
   }
   
   private async generateTokens(userId: string, email: string) {
-    const accessToken = await this.jwtService.signAsync(
+    const access_token = await this.jwtService.signAsync(
       {
         sub: userId,
         email,
@@ -126,7 +114,7 @@ export class AuthService {
     );
 
     return {
-      accessToken,
+      access_token: access_token,
     };
   }
 
