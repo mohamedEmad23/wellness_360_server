@@ -5,7 +5,7 @@ import { Activity, ActivitySchema } from './schemas/activity.schema';
 import { UserActivity, UserActivitySchema } from './schemas/userActivity.schema';
 import { FitnessProfile, FitnessProfileSchema } from './schemas/fitness-profile.schema';
 import { WorkoutPlan, WorkoutPlanSchema } from './schemas/workout-plan.schema';
-
+import { FoodLog, FoodLogSchema } from './schemas/foodLog.schema';
 @Module({
   imports: [
     MongooseModule.forFeature([
@@ -14,6 +14,7 @@ import { WorkoutPlan, WorkoutPlanSchema } from './schemas/workout-plan.schema';
       { name: UserActivity.name, schema: UserActivitySchema },
       { name: FitnessProfile.name, schema: FitnessProfileSchema },
       { name: WorkoutPlan.name, schema: WorkoutPlanSchema },    
+      { name: FoodLog.name, schema: FoodLogSchema },
     ]),
   ],
   exports: [
