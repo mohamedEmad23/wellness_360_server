@@ -6,6 +6,7 @@ import { UserActivity, UserActivitySchema } from './schemas/userActivity.schema'
 import { FitnessProfile, FitnessProfileSchema } from './schemas/fitness-profile.schema';
 import { WorkoutPlan, WorkoutPlanSchema } from './schemas/workout-plan.schema';
 import { SleepLog, SleepLogSchema } from './schemas/sleepLog.schema';
+import { ReauthSession, ReauthSessionSchema } from './schemas/reauth-session.schema';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { SleepLog, SleepLogSchema } from './schemas/sleepLog.schema';
       { name: FitnessProfile.name, schema: FitnessProfileSchema },
       { name: WorkoutPlan.name, schema: WorkoutPlanSchema },    
       { name: SleepLog.name, schema: SleepLogSchema },
+      { name: ReauthSession.name, schema: ReauthSessionSchema },
     ]),
   ],
   exports: [

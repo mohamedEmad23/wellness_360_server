@@ -1,13 +1,15 @@
-import {
-  BadRequestException,
-  Injectable,
-  UnauthorizedException,
-  InternalServerErrorException,
+import { 
+  BadRequestException, 
+  Injectable, 
+  UnauthorizedException, 
+  InternalServerErrorException 
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
 import * as bcrypt from 'bcrypt';
-import { randomInt } from 'crypto';
+import { randomInt, randomBytes } from 'crypto';
 import axios from 'axios';
 import { UsersService } from '../users/users.service';
 import { LoginDto } from './dto/login.dto';
@@ -16,14 +18,17 @@ import { VerifyEmailDto } from './dto/verify-email.dto';
 import { ResendOtpDto } from './dto/resend-otp.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { ReauthenticateDto } from './dto/reauthenticate.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
+import { ReauthSession } from '../../infrastructure/database/schemas/reauth-session.schema';
 
 @Injectable()
 export class AuthService {
-  // Use environment variable for secret password
   constructor(
     private readonly usersService: UsersService,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
+    @InjectModel(ReauthSession.name) private reauthSessionModel: Model<ReauthSession>
   ) {}
 
   async register(registerDto: RegisterDto) {
@@ -34,10 +39,9 @@ export class AuthService {
 
     const hashedPassword = await bcrypt.hash(registerDto.password, 10);
     
-    // Generate OTP for email verification
     const otp = this.generateOtp();
     const now = new Date();
-    const expiresAt = new Date(now.getTime() + 5 * 60000); // OTP expires in 5 minutes
+    const expiresAt = new Date(now.getTime() + 5 * 60000);
     
     const user = await this.usersService.create({
       ...registerDto,
@@ -48,7 +52,6 @@ export class AuthService {
       isEmailVerified: false,
     });
 
-    // Send OTP to user's email
     await this.sendOtpEmail(user.email, otp);
 
     return {
@@ -137,18 +140,15 @@ export class AuthService {
       };
     }
     
-    // Check if OTP is valid
     if (!user.currentOtp || user.currentOtp !== otp) {
       throw new BadRequestException('Invalid OTP');
     }
     
-    // Check if OTP is expired
     const now = new Date();
     if (!user.emailVerificationOtpExpiresAt || user.emailVerificationOtpExpiresAt < now) {
       throw new BadRequestException('OTP expired. Please request a new one.');
     }
     
-    // Mark email as verified and clear OTP data
     await this.usersService.updateById(user._id.toString(), {
       isEmailVerified: true,
       currentOtp: null,
@@ -156,7 +156,6 @@ export class AuthService {
       emailVerificationOtpExpiresAt: null,
     });
     
-    // Generate tokens for automatic login after verification
     const tokens = await this.generateTokens(user._id.toString(), user.email);
     
     return {
@@ -188,25 +187,21 @@ export class AuthService {
       };
     }
     
-    // Check if last OTP was sent less than 1 minute ago
     const now = new Date();
     if (user.emailVerificationOtpCreatedAt && 
         (now.getTime() - user.emailVerificationOtpCreatedAt.getTime()) < 60000) {
       throw new BadRequestException('Please wait at least 1 minute before requesting a new OTP');
     }
     
-    // Generate new OTP
     const otp = this.generateOtp();
-    const expiresAt = new Date(now.getTime() + 5 * 60000); // OTP expires in 5 minutes
+    const expiresAt = new Date(now.getTime() + 5 * 60000);
     
-    // Update user with new OTP
     await this.usersService.updateById(user._id.toString(), {
       currentOtp: otp,
       emailVerificationOtpCreatedAt: now,
       emailVerificationOtpExpiresAt: expiresAt,
     });
     
-    // Send OTP to user's email
     await this.sendOtpEmail(user.email, otp);
     
     return {
@@ -219,31 +214,26 @@ export class AuthService {
     
     const user = await this.usersService.findByEmail(email);
     if (!user) {
-      // Return success message even if user not found for security
       return {
         message: 'If the email exists in our system, you will receive a password reset code',
       };
     }
     
-    // Check if last OTP was sent less than 1 minute ago
     const now = new Date();
     if (user.emailVerificationOtpCreatedAt && 
         (now.getTime() - user.emailVerificationOtpCreatedAt.getTime()) < 60000) {
       throw new BadRequestException('Please wait at least 1 minute before requesting a new code');
     }
     
-    // Generate new OTP
     const otp = this.generateOtp();
-    const expiresAt = new Date(now.getTime() + 5 * 60000); // OTP expires in 5 minutes
+    const expiresAt = new Date(now.getTime() + 5 * 60000);
     
-    // Update user with new OTP
     await this.usersService.updateById(user._id.toString(), {
       currentOtp: otp,
       emailVerificationOtpCreatedAt: now,
       emailVerificationOtpExpiresAt: expiresAt,
     });
     
-    // Send password reset OTP to user's email
     await this.sendPasswordResetEmail(user.email, otp);
     
     return {
@@ -259,18 +249,15 @@ export class AuthService {
       throw new BadRequestException('Invalid or expired password reset code');
     }
     
-    // Check if OTP is valid
     if (!user.currentOtp || user.currentOtp !== otp) {
       throw new BadRequestException('Invalid or expired password reset code');
     }
     
-    // Check if OTP is expired
     const now = new Date();
     if (!user.emailVerificationOtpExpiresAt || user.emailVerificationOtpExpiresAt < now) {
       throw new BadRequestException('Password reset code has expired. Please request a new one');
     }
     
-    // Hash new password and update user
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     await this.usersService.updateById(user._id.toString(), {
       password: hashedPassword,
@@ -284,11 +271,92 @@ export class AuthService {
     };
   }
 
+  private generateReauthToken(): string {
+    return randomBytes(32).toString('hex');
+  }
+
+  async reauthenticate(userId: string, reauthenticateDto: ReauthenticateDto) {
+    const user = await this.usersService.findById(userId);
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    const isPasswordValid = await bcrypt.compare(
+      reauthenticateDto.currentPassword,
+      user.password,
+    );
+    if (!isPasswordValid) {
+      throw new UnauthorizedException('Invalid password');
+    }
+
+    // Delete any existing sessions for this user
+    await this.reauthSessionModel.deleteMany({ userId: user._id });
+
+    // Generate new reauth session
+    const token = this.generateReauthToken();
+    const now = new Date();
+    const session = await this.reauthSessionModel.create({
+      userId: user._id,
+      token,
+      expiresAt: new Date(now.getTime() + 5 * 60 * 1000), // 5 minutes expiry
+      used: false,
+    });
+
+    return {
+      message: 'Reauthentication successful',
+      reauthToken: session.token,
+      expiresAt: session.expiresAt,
+    };
+  }
+
+  async changePassword(userId: string, changePasswordDto: ChangePasswordDto) {
+    // Find and validate the reauth session
+    const session = await this.reauthSessionModel.findOne({
+      userId,
+      token: changePasswordDto.reauthToken,
+      used: false,
+      expiresAt: { $gt: new Date() }
+    });
+
+    if (!session) {
+      throw new UnauthorizedException('Invalid or expired reauthentication token');
+    }
+
+    const user = await this.usersService.findById(userId);
+    if (!user) {
+      throw new UnauthorizedException('User not found');
+    }
+
+    // Mark the session as used before making any changes
+    session.used = true;
+    await session.save();
+
+    try {
+      // Hash the new password
+      const hashedPassword = await bcrypt.hash(changePasswordDto.newPassword, 10);
+
+      // Update the password
+      await this.usersService.updateById(userId, {
+        password: hashedPassword,
+      });
+
+      // Clean up old sessions
+      await this.reauthSessionModel.deleteMany({ userId });
+
+      return {
+        message: 'Password changed successfully',
+      };
+    } catch (error) {
+      // In case of error, ensure the session is deleted
+      await this.reauthSessionModel.deleteMany({ userId });
+      throw error;
+    }
+  }
+
   private generateOtp(): string {
     return randomInt(100000, 999999).toString();
   }
 
-  // Send OTP via email
   private async sendOtpEmail(email: string, otp: string) {
     const emailBody = {
       to: email,
