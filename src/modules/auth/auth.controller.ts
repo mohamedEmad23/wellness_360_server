@@ -38,14 +38,7 @@ export class AuthController {
   })
   async login(@Body() loginDto: LoginDto, @Res({ passthrough: true }) response: Response) {
     const { user, access_token } = await this.authService.login(loginDto);
-    response.cookie('access_token', access_token, {
-      httpOnly: true,
-      secure: false, 
-      sameSite: 'lax',
-      maxAge: 24 * 60 * 60 * 1000,
-    });
-
-    return user; 
+    return { user, access_token }; 
   }
 
   @Post('verify-email')

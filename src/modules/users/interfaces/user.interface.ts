@@ -18,5 +18,6 @@ export interface User extends Document {
   emailVerificationOtpCreatedAt?: Date;
   emailVerificationOtpExpiresAt?: Date;
   isEmailVerified: boolean;
+  isProfileCompleted: boolean;
   created_at: Date;
 }
