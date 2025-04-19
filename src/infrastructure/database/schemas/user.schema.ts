@@ -29,6 +29,9 @@ export class User {
   @Prop({ default: false })
   isEmailVerified: boolean;
 
+  @Prop({ default: false })
+  isProfileCompleted: boolean;
+
   @Prop()
   gender?: 'male' | 'female';
 

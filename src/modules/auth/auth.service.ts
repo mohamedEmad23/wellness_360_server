@@ -96,6 +96,7 @@ export class AuthService {
         firstName: user.firstName,
         lastName: user.lastName,
         isEmailVerified: user.isEmailVerified,
+        isProfileCompleted: user.isProfileCompleted || false,
       },
       access_token: tokens.access_token,
     };
@@ -130,6 +131,7 @@ export class AuthService {
       return {
         message: 'Email already verified',
         isEmailVerified: true,
+        isProfileCompleted: user.isProfileCompleted || false,
       };
     }
     
@@ -158,6 +160,7 @@ export class AuthService {
     return {
       message: 'Email verified successfully',
       isEmailVerified: true,
+      isProfileCompleted: user.isProfileCompleted || false,
       user: {
         _id: user._id,
         email: user.email,
