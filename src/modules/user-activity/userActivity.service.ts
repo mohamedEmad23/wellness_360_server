@@ -102,4 +102,13 @@ export class UserActivityService {
       updatedCaloriesLeft: Math.round(user.caloriesLeft),
     };
   }
+
+  async getAllActivities() {
+    const activities = await this.activityModel.find().exec();
+    return activities.map(activity => ({
+      id: activity._id,
+      name: activity.name,
+      met: activity.met,
+    }));
+  }
 }
