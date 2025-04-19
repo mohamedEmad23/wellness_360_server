@@ -14,6 +14,8 @@ import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 import { ResendOtpDto } from './dto/resend-otp.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 
 @Injectable()
 export class AuthService {
@@ -212,6 +214,76 @@ export class AuthService {
     };
   }
   
+  async forgotPassword(forgotPasswordDto: ForgotPasswordDto) {
+    const { email } = forgotPasswordDto;
+    
+    const user = await this.usersService.findByEmail(email);
+    if (!user) {
+      // Return success message even if user not found for security
+      return {
+        message: 'If the email exists in our system, you will receive a password reset code',
+      };
+    }
+    
+    // Check if last OTP was sent less than 1 minute ago
+    const now = new Date();
+    if (user.emailVerificationOtpCreatedAt && 
+        (now.getTime() - user.emailVerificationOtpCreatedAt.getTime()) < 60000) {
+      throw new BadRequestException('Please wait at least 1 minute before requesting a new code');
+    }
+    
+    // Generate new OTP
+    const otp = this.generateOtp();
+    const expiresAt = new Date(now.getTime() + 5 * 60000); // OTP expires in 5 minutes
+    
+    // Update user with new OTP
+    await this.usersService.updateById(user._id.toString(), {
+      currentOtp: otp,
+      emailVerificationOtpCreatedAt: now,
+      emailVerificationOtpExpiresAt: expiresAt,
+    });
+    
+    // Send password reset OTP to user's email
+    await this.sendPasswordResetEmail(user.email, otp);
+    
+    return {
+      message: 'If the email exists in our system, you will receive a password reset code',
+    };
+  }
+
+  async resetPassword(resetPasswordDto: ResetPasswordDto) {
+    const { email, otp, newPassword } = resetPasswordDto;
+    
+    const user = await this.usersService.findByEmail(email);
+    if (!user) {
+      throw new BadRequestException('Invalid or expired password reset code');
+    }
+    
+    // Check if OTP is valid
+    if (!user.currentOtp || user.currentOtp !== otp) {
+      throw new BadRequestException('Invalid or expired password reset code');
+    }
+    
+    // Check if OTP is expired
+    const now = new Date();
+    if (!user.emailVerificationOtpExpiresAt || user.emailVerificationOtpExpiresAt < now) {
+      throw new BadRequestException('Password reset code has expired. Please request a new one');
+    }
+    
+    // Hash new password and update user
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await this.usersService.updateById(user._id.toString(), {
+      password: hashedPassword,
+      currentOtp: null,
+      emailVerificationOtpCreatedAt: null,
+      emailVerificationOtpExpiresAt: null,
+    });
+    
+    return {
+      message: 'Password reset successful. You can now login with your new password',
+    };
+  }
+
   private generateOtp(): string {
     return randomInt(100000, 999999).toString();
   }
@@ -248,6 +320,41 @@ export class AuthService {
         statusCode: 500,
         errorCode: 'EMAIL_SEND_ERROR',
         message: 'Failed to send the OTP email. Please try again later.',
+      });
+    }
+  }
+
+  private async sendPasswordResetEmail(email: string, otp: string) {
+    const emailBody = {
+      to: email,
+      subject: 'Password Reset Code',
+      text: `Your password reset code is: ${otp}. It is valid for 5 minutes.`,
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 5px;">
+          <h2 style="color: #333;">Password Reset</h2>
+          <p>You have requested to reset your password. Use the following code to reset your password:</p>
+          <div style="background-color: #f5f5f5; padding: 10px; text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 5px; margin: 20px 0;">
+            ${otp}
+          </div>
+          <p>This code is valid for 5 minutes only.</p>
+          <p>If you didn't request this code, please ignore this email and make sure your account is secure.</p>
+        </div>
+      `,
+    };
+
+    const headers = {
+      Authorization: `Bearer ${this.configService.get('SECRET_PASSWORD') || 'your-secret-password'}`,
+      'Content-Type': 'application/json',
+    };
+
+    try {
+      await axios.post(`http://email-sender-orcin-mu.vercel.app/send-email`, emailBody, { headers });
+    } catch (error) {
+      console.error('Email sending error:', error.response?.data || error.message);
+      throw new InternalServerErrorException({
+        statusCode: 500,
+        errorCode: 'EMAIL_SEND_ERROR',
+        message: 'Failed to send the password reset code. Please try again later.',
       });
     }
   }
