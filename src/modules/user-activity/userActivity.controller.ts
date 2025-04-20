@@ -16,7 +16,7 @@ import { Body, Controller, Post, Get, Param, Delete, UseGuards } from '@nestjs/c
     @ApiOperation({ summary: 'Log an activity for a user' })
     @ApiBody({ type: CreateUserActivityDto })
     @ApiResponse({ status: 201, description: 'Activity logged successfully' })
-    async logActivity(@GetUser('userId') userId, @Body() dto: CreateUserActivityDto) {
+    async logActivity(@GetUser('userId') userId: string, @Body() dto: CreateUserActivityDto) {
       return this.userActivityService.logActivity(dto, userId);
     }
   

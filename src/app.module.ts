@@ -7,6 +7,7 @@ import { AuthModule } from './modules/auth/auth.module';
 import { UsersModule } from './modules/users/users.module';
 import { WorkoutsModule } from './modules/workouts/workouts.module';
 import { UserActivityModule } from './modules/user-activity/userActivity.module';
+import { FoodLogModule } from './modules/edamam/foodLog.module';
 import { SleepModule } from './modules/sleep/sleep.module';
 
 @Module({
@@ -18,6 +19,7 @@ import { SleepModule } from './modules/sleep/sleep.module';
     AuthModule,
     UsersModule,
     UserActivityModule,
+    FoodLogModule,
     WorkoutsModule,
     SleepModule
   ],
