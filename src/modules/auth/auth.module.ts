@@ -6,6 +6,7 @@ import { AuthService } from './auth.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { UsersModule } from '../users/users.module';
 import { JwtConfig } from '../../config/jwt.config';
+import { DatabaseModule } from 'src/infrastructure/database/database.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { JwtConfig } from '../../config/jwt.config';
       inject: [ConfigService],
       useFactory: JwtConfig, 
     }),
+    DatabaseModule, 
     UsersModule,
     ConfigModule,
   ],
