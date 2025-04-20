@@ -57,7 +57,7 @@ export class User {
   dailyCalories?: number;
 
   @Prop({ default: function () { return this.dailyCalories; } })
-  caloriesLeft?: number; 
+  caloriesLeft?: number;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
