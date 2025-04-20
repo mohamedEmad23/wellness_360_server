@@ -13,30 +13,21 @@ export class FoodLogService {
     @InjectConnection() private connection: Connection,
   ) {}
 
-  async createFoodLog(foodLogs: CreateFoodLogDto[], userId: string) {
-    const session = await this.connection.startSession();
-    session.startTransaction();
+  async createFoodLog(foodLog: CreateFoodLogDto, userId: string) {
     const user_id = new Types.ObjectId(userId);
-    const user = await this.userModel.findById(user_id).session(session);
-    try {
-      for (const foodLog of foodLogs) {
-        const logWithUser = {
-            ...foodLog,
-            userId: user_id,
-          };
+    const user = await this.userModel.findById(user_id);
 
-        await this.foodLogModel.create([logWithUser], { session });
+    console.log('foodLog in service: ', foodLog);
+    
+    const logWithUser = {
+      ...foodLog,
+      userId: user_id,
+    };
 
-        const caloriesLeft = user.caloriesLeft - foodLog.calories;
-        await this.userModel.updateOne({ _id: user_id }, { caloriesLeft: caloriesLeft }).session(session);
-      }
-      await session.commitTransaction();
-    } catch (error) {
-      await session.abortTransaction();
-      throw error;
-    } finally {
-      session.endSession();
-    }
+    await this.foodLogModel.create([logWithUser]);
+
+    const caloriesLeft = user.caloriesLeft - foodLog.calories;
+    await this.userModel.updateOne({ _id: user_id }, { caloriesLeft: caloriesLeft });
   }
 
   async getUserFoodLogs(userId: string) {
@@ -44,8 +35,18 @@ export class FoodLogService {
   }
 
   async getUserFoodLogsByDate(userId: string, date: Date) {
-    return this.foodLogModel.find({ userId: new Types.ObjectId(userId), date: date }).exec();
+    const start = new Date(date);
+    start.setUTCHours(0, 0, 0, 0);
+  
+    const end = new Date(start);
+    end.setUTCDate(end.getUTCDate() + 1);
+  
+    return this.foodLogModel.find({
+      userId: new Types.ObjectId(userId),
+      date: { $gte: start, $lt: end },
+    }).exec();
   }
+  
 
   async deleteUserFoodLog(userId: string, foodLogId: string) {
     const user_id = new Types.ObjectId(userId);

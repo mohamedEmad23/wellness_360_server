@@ -3,7 +3,7 @@ import { ApiTags, ApiOperation, ApiResponse, ApiBody, ApiBearerAuth } from '@nes
 import { EdamamService } from './edamam.service';
 import { FoodLogService } from './foodLog.service';
 import { CreateFoodLogDto } from './dto/create-food-log.dto';
-import { LogFoodDto } from './dto/log-food.dto';
+import { LogFoodDto, LogFoodByInfoDto } from './dto/log-food.dto';
 import { GetUser } from '../../common/decorators/getUser.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 @ApiTags('food-log')
@@ -16,6 +16,30 @@ export class FoodLogController {
     private readonly foodLogService: FoodLogService,
   ) {}
 
+  @Get('search')
+  @ApiOperation({ summary: 'Search for food suggestions by query' })
+  @ApiResponse({ status: 200, description: 'Successfully fetched suggestions.' })
+  @ApiResponse({ status: 500, description: 'Failed to fetch suggestions.' })
+  async searchFoodSuggestions(@Query('query') query: string) {
+    return this.edamamService.searchFoodSuggestions(query);
+  }
+
+  @Post('log-by-id')
+  @ApiOperation({ summary: 'Log food directly by foodId, measureURI and quantity' })
+  @ApiBody({ type: LogFoodByInfoDto })
+  async logFoodBySelection(
+    @GetUser('userId') userId: string,
+    @Body() body: LogFoodByInfoDto
+  ) {
+    const foodLog = await this.edamamService.getNutrientsForFoodId(
+      body.foodId,
+      body.measureURI,
+      body.quantity,
+      body.title
+    );
+    await this.foodLogService.createFoodLog(foodLog, userId);
+  }
+
   @Post()
   @ApiOperation({ summary: 'Log food intake' })
   @ApiResponse({ status: 201, description: 'The food has been successfully logged.' })
@@ -26,17 +50,8 @@ export class FoodLogController {
     @Body() body: LogFoodDto
   ) {
     
-    const foodLogs: CreateFoodLogDto[] = (await this.edamamService.analyzeFoodFromText(body.description))
-    .map((item: CreateFoodLogDto) => ({
-      foodName: item.foodName,
-      title: body.description,
-      calories: item.calories,
-      protein: item.protein,
-      carbs: item.carbs,
-      fats: item.fats,
-    }));
-
-    await this.foodLogService.createFoodLog(foodLogs, userId);
+    const foodLog: CreateFoodLogDto = (await this.edamamService.analyzeFoodFromText(body.description))
+    await this.foodLogService.createFoodLog(foodLog, userId);
   }
 
   @Get()

@@ -9,6 +9,8 @@ export class FoodLog {
   userId: string;
 
   @Prop({ required: true })
+  title: string;
+  @Prop({ required: true })
   foodName: string;
 
   @Prop({ required: true })
