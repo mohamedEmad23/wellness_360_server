@@ -17,7 +17,6 @@ export class FoodLogService {
     const user_id = new Types.ObjectId(userId);
     const user = await this.userModel.findById(user_id);
 
-    console.log('foodLog in service: ', foodLog);
     
     const logWithUser = {
       ...foodLog,

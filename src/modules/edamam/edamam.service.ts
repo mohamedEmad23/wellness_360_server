@@ -17,7 +17,6 @@ export class EdamamService {
 
   async analyzeFoodFromText(ingr: string): Promise<CreateFoodLogDto> {
     try {
-      console.log('Starting food analysis for:', ingr);
 
       const parserResponse = await firstValueFrom(
         this.httpService.get(this.parserUrl, {
