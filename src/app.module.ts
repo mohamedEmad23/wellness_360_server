@@ -9,6 +9,7 @@ import { WorkoutsModule } from './modules/workouts/workouts.module';
 import { UserActivityModule } from './modules/user-activity/userActivity.module';
 import { FoodLogModule } from './modules/edamam/foodLog.module';
 import { SleepModule } from './modules/sleep/sleep.module';
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
@@ -21,7 +22,8 @@ import { SleepModule } from './modules/sleep/sleep.module';
     UserActivityModule,
     FoodLogModule,
     WorkoutsModule,
-    SleepModule
+    SleepModule,
+    ScheduleModule.forRoot()
   ],
   controllers: [AppController],
   providers: [AppService],

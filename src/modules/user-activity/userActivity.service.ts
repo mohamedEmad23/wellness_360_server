@@ -1,11 +1,11 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-
 import { UserActivity, UserActivityDocument } from '../../infrastructure/database/schemas/userActivity.schema';
 import { User } from '../../infrastructure/database/schemas/user.schema';
 import { Activity } from '../../infrastructure/database/schemas/activity.schema';
 import { CreateUserActivityDto } from './dto/create-user-activity.dto';
+import { UserMacros } from 'src/infrastructure/database/schemas/userMacros.schema';
 
 @Injectable()
 export class UserActivityService {
@@ -13,6 +13,7 @@ export class UserActivityService {
     @InjectModel(UserActivity.name) private userActivityModel: Model<UserActivityDocument>,
     @InjectModel(User.name) private userModel: Model<User>,
     @InjectModel(Activity.name) private activityModel: Model<Activity>,
+    @InjectModel(UserMacros.name) private userMacrosModel: Model<UserMacros>,
   ) {}
 
   async logActivity(dto: CreateUserActivityDto, user_id: string) {
@@ -21,6 +22,9 @@ export class UserActivityService {
 
     const user = await this.userModel.findById(userId);
     if (!user) throw new NotFoundException('User not found');
+
+    const userMacros = await this.userMacrosModel.findOne({ userId: userId });
+    if (!userMacros) throw new NotFoundException('User macros not found');
 
     const activity = await this.activityModel.findById(activityId);
     if (!activity) throw new NotFoundException('Activity not found');
@@ -31,8 +35,11 @@ export class UserActivityService {
 
     const caloriesBurned = met * weight * durationInHours;
 
-    user.caloriesLeft = (user.caloriesLeft ?? user.dailyCalories) + caloriesBurned;
-    await user.save();
+    userMacros.caloriesLeft += caloriesBurned;
+    userMacros.carbsLeft += caloriesBurned * 0.5;
+    userMacros.proteinLeft += caloriesBurned * 0.25;
+    userMacros.fatLeft += caloriesBurned * 0.25;
+    await userMacros.save();
 
     const userActivity = new this.userActivityModel({
       user: user._id,
@@ -51,7 +58,7 @@ export class UserActivityService {
         duration: dto.duration,
         title: dto.title,
         caloriesBurned: Math.round(caloriesBurned),
-        caloriesLeft: Math.round(user.caloriesLeft),
+        caloriesLeft: Math.round(userMacros.caloriesLeft),
       },
     };
   }
@@ -90,16 +97,22 @@ export class UserActivityService {
   
     const user = activityEntry.user as User & { _id: Types.ObjectId };
     const caloriesBurned = activityEntry.caloriesBurned ?? 0;
+
+    const userMacros = await this.userMacrosModel.findOne({ userId: user._id });
+    if (!userMacros) throw new NotFoundException('User macros not found');
   
-    user.caloriesLeft -= caloriesBurned;
-    await this.userModel.findByIdAndUpdate(user._id, { caloriesLeft: user.caloriesLeft });
+    userMacros.caloriesLeft -= caloriesBurned;
+    userMacros.carbsLeft -= caloriesBurned * 0.5;
+    userMacros.proteinLeft -= caloriesBurned * 0.25;
+    userMacros.fatLeft -= caloriesBurned * 0.25;
+    await userMacros.save();
   
     await this.userActivityModel.findByIdAndDelete(userActivityId);
   
     return {
       message: 'Activity log deleted',
       caloriesRemoved: Math.round(caloriesBurned),
-      updatedCaloriesLeft: Math.round(user.caloriesLeft),
+      updatedCaloriesLeft: Math.round(userMacros.caloriesLeft),
     };
   }
 }
