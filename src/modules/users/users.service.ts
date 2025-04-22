@@ -4,13 +4,32 @@ import { Model, Error } from 'mongoose';
 import { User } from './interfaces/user.interface';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { UserMacros } from 'src/infrastructure/database/schemas/userMacros.schema';
+import { CreateUserMacrosDto } from './dto/create-user-macros.dto';
+import { UpdateUserMacrosDto } from './dto/update-user-macros.dto';
 
 @Injectable()
 export class UsersService {
-  constructor(@InjectModel('User') private readonly userModel: Model<User>) {}
+  constructor(
+    @InjectModel('User') private readonly userModel: Model<User>, 
+    @InjectModel('UserMacros') private readonly userMacrosModel: Model<UserMacros>
+  ) {}
 
   async create(createUserDto: CreateUserDto): Promise<User> {
-    const createdUser = new this.userModel(createUserDto);
+    const today = new Date();
+    const birthDate = new Date(createUserDto.dob);
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const monthDiff = today.getMonth() - birthDate.getMonth();
+    
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--;
+    }
+
+    const createdUser = new this.userModel({
+      ...createUserDto,
+      age: age,
+    });
+
     return createdUser.save();
   }
 
@@ -79,6 +98,17 @@ export class UsersService {
         updatedData.isProfileCompleted = true;
       }
       
+      const today = new Date();
+      const birthDate = new Date(updateUserDto.dob);
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const monthDiff = today.getMonth() - birthDate.getMonth();
+      
+      if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+      }
+
+      updatedData.age = age;
+
       const updatedUser = await this.updateById(userId, updatedData);
       
       if (!updatedUser) {
@@ -130,4 +160,127 @@ export class UsersService {
       updateData[field] !== undefined || currentUser[field] !== undefined
     );
   }
+
+  async suggestDailyMacros(userId: string): Promise<UserMacros> {
+    const user = await this.findById(userId);
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+
+    const { height, weight, age, gender, activityLevel, goal } = user;
+
+    const bmr = this.calculateBMR(height, weight, age, gender);
+    const caloriesBurned = this.calculateDailyCalories(bmr, activityLevel);
+    let dailyCalories = 0;
+
+    switch (goal) {
+      case 'lose':
+        dailyCalories = caloriesBurned - 500;
+        break;
+      case 'gain':
+        dailyCalories = caloriesBurned + 500;
+        break;
+      case 'maintain':
+        dailyCalories = caloriesBurned;
+        break;
+      default:
+        throw new BadRequestException('Invalid goal');
+    }
+
+
+    const macros = {
+      userId: userId,
+      date: new Date(),
+      dailyCalories,
+      caloriesLeft: dailyCalories,
+      dailyProtein: dailyCalories * 0.25,
+      proteinLeft: dailyCalories * 0.25,
+      dailyCarbs: dailyCalories * 0.5,
+      carbsLeft: dailyCalories * 0.5,
+      dailyFat: dailyCalories * 0.25,
+      fatLeft: dailyCalories * 0.25,
+    } as UserMacros;
+
+    return macros;
+  }
+
+  private calculateBMR(height: number, weight: number, age: number, gender: string): number {
+    if (gender === 'male') {
+      return 88.362 + (13.397 * weight) + (4.799 * height) - (5.677 * age);
+    } else {
+      return 447.593 + (9.247 * weight) + (3.098 * height) - (4.330 * age);
+    }
+  }
+
+  private calculateDailyCalories(bmr: number, activityLevel: string): number {
+    switch (activityLevel) {
+      case 'sedentary':
+        return bmr * 1.2;
+      case 'lightly active':
+        return bmr * 1.375;
+      case 'moderately active':
+        return bmr * 1.55;
+      case 'very active':
+        return bmr * 1.725;
+      default:
+        return bmr;
+    }
+  }
+    
+   async createUserMacros
+   (userId: string, createUserMacrosDto: CreateUserMacrosDto)
+   : Promise<UserMacros> {
+    const existingMacros = await this.userMacrosModel.findOne({ userId }).exec();
+    if (existingMacros) {
+      return existingMacros;
+    }
+
+    const userMacros = new this.userMacrosModel({
+      userId: userId,
+      dailyCalories: createUserMacrosDto.dailyCalories,
+      caloriesLeft: createUserMacrosDto.dailyCalories,
+      dailyProtein: createUserMacrosDto.dailyCalories * 0.25,
+      proteinLeft: createUserMacrosDto.dailyCalories * 0.25,
+      dailyCarbs: createUserMacrosDto.dailyCalories * 0.5,
+      carbsLeft: createUserMacrosDto.dailyCalories * 0.5,
+      dailyFat: createUserMacrosDto.dailyCalories * 0.25,
+      fatLeft: createUserMacrosDto.dailyCalories * 0.25,
+    });
+
+    return userMacros.save();
+   }
+
+   async updateUserMacros(userId: string, updateUserMacrosDto: UpdateUserMacrosDto): Promise<UserMacros> {
+
+    const userMacros = await this.userMacrosModel.findOne({ userId }).exec();
+    if (!userMacros) {
+      throw new BadRequestException('User macros not found');
+    }
+
+    const newDailyCalories = updateUserMacrosDto.dailyCalories;
+    const newDailyProtein = (updateUserMacrosDto.dailyCalories * 0.25);
+    const newDailyCarbs = (updateUserMacrosDto.dailyCalories * 0.5);
+    const newDailyFat = (updateUserMacrosDto.dailyCalories * 0.25);
+
+    const updateData = {
+      dailyCalories: newDailyCalories,
+      caloriesLeft: newDailyCalories - (userMacros.dailyCalories - userMacros.caloriesLeft),
+      dailyProtein: newDailyProtein,
+      proteinLeft: newDailyProtein - (userMacros.dailyProtein - userMacros.proteinLeft),
+      dailyCarbs: newDailyCarbs,
+      carbsLeft: newDailyCarbs - (userMacros.dailyCarbs - userMacros.carbsLeft),
+      dailyFat: newDailyFat,
+      fatLeft: newDailyFat - (userMacros.dailyFat - userMacros.fatLeft),
+    };
+
+    const updatedMacros = await this.userMacrosModel.findOneAndUpdate(
+      { userId },
+      updateData,
+      { new: true, runValidators: true }
+    ).exec();
+
+    return updatedMacros;
+  }
+
+
 }

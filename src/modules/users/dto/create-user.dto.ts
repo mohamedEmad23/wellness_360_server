@@ -55,12 +55,6 @@ export class CreateUserDto {
   @IsDateString()
   dob?: Date;
 
-  @ApiPropertyOptional({ example: 22 })
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  age?: number;
-
   @ApiProperty({ example: 175, description: 'Height in centimeters' })
   @IsNumber()
   @Min(50)
@@ -86,16 +80,6 @@ export class CreateUserDto {
   @IsOptional()
   @IsEnum(['lose', 'maintain', 'gain'])
   goal?: 'lose' | 'maintain' | 'gain';
-
-  @ApiPropertyOptional({ example: 3000 })
-  @IsOptional()
-  @IsNumber()
-  dailyCalories?: number;
-
-  @ApiPropertyOptional({ example: 3000 })
-  @IsOptional()
-  @IsNumber()
-  caloriesLeft?: number;
 
   // OTP related fields
   currentOtp?: string;

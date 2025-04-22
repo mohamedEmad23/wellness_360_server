@@ -26,13 +26,6 @@ export class UpdateUserDto {
   })
   dob?: Date;
 
-  @ApiPropertyOptional({ example: 22 })
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  @Max(120)
-  age?: number;
-
   @ApiPropertyOptional({ example: 175, description: 'Height in centimeters' })
   @IsOptional()
   @IsNumber()
@@ -62,18 +55,4 @@ export class UpdateUserDto {
   @IsOptional()
   @IsEnum(['lose', 'maintain', 'gain'])
   goal?: 'lose' | 'maintain' | 'gain';
-
-  @ApiPropertyOptional({ example: 3000 })
-  @IsOptional()
-  @IsNumber()
-  @Min(500)
-  @Max(10000)
-  dailyCalories?: number;
-
-  @ApiPropertyOptional({ example: 3000 })
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  @Max(10000)
-  caloriesLeft?: number;
 } 
