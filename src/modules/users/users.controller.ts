@@ -12,7 +12,6 @@ import { UpdateUserMacrosDto } from './dto/update-user-macros.dto';
 @UseGuards(JwtAuthGuard)
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
-  // make getprofile endpoint
   @Get('')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get user profile' })

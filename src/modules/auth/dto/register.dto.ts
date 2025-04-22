@@ -87,16 +87,6 @@ export class RegisterDto {
   @IsEnum(['lose', 'maintain', 'gain'])
   goal?: 'lose' | 'maintain' | 'gain';
 
-  @ApiPropertyOptional({ example: 3000 })
-  @IsOptional()
-  @IsNumber()
-  dailyCalories?: number;
-
-  @ApiPropertyOptional({ example: 3000 })
-  @IsOptional()
-  @IsNumber()
-  caloriesLeft?: number;
-
   constructor(partial: Partial<RegisterDto> = {}) {
     Object.assign(this, partial);
   }

@@ -191,14 +191,14 @@ export class UsersService {
     const macros = {
       userId: userId,
       date: new Date(),
-      dailyCalories,
-      caloriesLeft: dailyCalories,
-      dailyProtein: dailyCalories * 0.25,
-      proteinLeft: dailyCalories * 0.25,
-      dailyCarbs: dailyCalories * 0.5,
-      carbsLeft: dailyCalories * 0.5,
-      dailyFat: dailyCalories * 0.25,
-      fatLeft: dailyCalories * 0.25,
+      dailyCalories: Math.round(dailyCalories),
+      caloriesLeft: Math.round(dailyCalories),
+      dailyProtein: Math.round(dailyCalories * 0.25),
+      proteinLeft: Math.round(dailyCalories * 0.25),
+      dailyCarbs: Math.round(dailyCalories * 0.5),
+      carbsLeft: Math.round(dailyCalories * 0.5),
+      dailyFat: Math.round(dailyCalories * 0.25),
+      fatLeft: Math.round(dailyCalories * 0.25),
     } as UserMacros;
 
     return macros;
@@ -237,14 +237,15 @@ export class UsersService {
 
     const userMacros = new this.userMacrosModel({
       userId: userId,
-      dailyCalories: createUserMacrosDto.dailyCalories,
-      caloriesLeft: createUserMacrosDto.dailyCalories,
-      dailyProtein: createUserMacrosDto.dailyCalories * 0.25,
-      proteinLeft: createUserMacrosDto.dailyCalories * 0.25,
-      dailyCarbs: createUserMacrosDto.dailyCalories * 0.5,
-      carbsLeft: createUserMacrosDto.dailyCalories * 0.5,
-      dailyFat: createUserMacrosDto.dailyCalories * 0.25,
-      fatLeft: createUserMacrosDto.dailyCalories * 0.25,
+      dailyCalories: Math.round(createUserMacrosDto.dailyCalories),
+      caloriesLeft: Math.round(createUserMacrosDto.dailyCalories),
+      dailyProtein: Math.round(createUserMacrosDto.dailyCalories * 0.25),
+      proteinLeft: Math.round(createUserMacrosDto.dailyCalories * 0.25),
+      dailyCarbs: Math.round(createUserMacrosDto.dailyCalories * 0.5),
+      carbsLeft: Math.round(createUserMacrosDto.dailyCalories * 0.5),
+      dailyFat: Math.round(createUserMacrosDto.dailyCalories * 0.25),
+      fatLeft: Math.round(createUserMacrosDto.dailyCalories * 0.25),
+      date: new Date(),
     });
 
     return userMacros.save();
@@ -263,14 +264,14 @@ export class UsersService {
     const newDailyFat = (updateUserMacrosDto.dailyCalories * 0.25);
 
     const updateData = {
-      dailyCalories: newDailyCalories,
-      caloriesLeft: newDailyCalories - (userMacros.dailyCalories - userMacros.caloriesLeft),
-      dailyProtein: newDailyProtein,
-      proteinLeft: newDailyProtein - (userMacros.dailyProtein - userMacros.proteinLeft),
-      dailyCarbs: newDailyCarbs,
-      carbsLeft: newDailyCarbs - (userMacros.dailyCarbs - userMacros.carbsLeft),
-      dailyFat: newDailyFat,
-      fatLeft: newDailyFat - (userMacros.dailyFat - userMacros.fatLeft),
+      dailyCalories: Math.round(newDailyCalories),
+      caloriesLeft: Math.round(newDailyCalories - (userMacros.dailyCalories - userMacros.caloriesLeft)),
+      dailyProtein: Math.round(newDailyProtein),
+      proteinLeft: Math.round(newDailyProtein - (userMacros.dailyProtein - userMacros.proteinLeft)),
+      dailyCarbs: Math.round(newDailyCarbs),
+      carbsLeft: Math.round(newDailyCarbs - (userMacros.dailyCarbs - userMacros.carbsLeft)),
+      dailyFat: Math.round(newDailyFat),
+      fatLeft: Math.round(newDailyFat - (userMacros.dailyFat - userMacros.fatLeft)),
     };
 
     const updatedMacros = await this.userMacrosModel.findOneAndUpdate(
