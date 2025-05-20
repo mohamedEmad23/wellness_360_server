@@ -27,6 +27,13 @@ import { Body, Controller, Post, Get, Param, Delete, UseGuards } from '@nestjs/c
       return this.userActivityService.getUserActivities(userId);
     }
   
+    @Get('activities')
+    @ApiOperation({ summary: 'Get all available activities' })
+    @ApiResponse({ status: 200, description: 'Returns the list of available activities' })
+    async getAllActivities() {
+      return this.userActivityService.getAllActivities();
+    }
+  
     @Delete(':id')
     @ApiOperation({ summary: 'Delete a specific user activity' })
     @ApiParam({ name: 'id', type: String, description: 'The ID of the user activity to delete' })
@@ -35,4 +42,3 @@ import { Body, Controller, Post, Get, Param, Delete, UseGuards } from '@nestjs/c
       return this.userActivityService.deleteUserActivity(activityId, userId);
     }
   }
-  
