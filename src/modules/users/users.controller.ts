@@ -4,8 +4,6 @@ import { UsersService } from './users.service';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { GetUser } from 'src/common/decorators/getUser.decorator';
-import { CreateUserMacrosDto } from './dto/create-user-macros.dto';
-import { UpdateUserMacrosDto } from './dto/update-user-macros.dto';
 
 @ApiTags('User')
 @Controller('user')
@@ -31,7 +29,11 @@ export class UsersController {
     const user = await this.usersService.findById(userId);
     if (!user) {
       throw new NotFoundException('User not found');
-    }    
+    }
+
+    // Get the macros for the user - will be created/calculated if not found
+    const userMacros = await this.usersService.getUserMacros(userId);
+        
     return {
       firstName: user.firstName,
       lastName: user.lastName,
@@ -44,6 +46,14 @@ export class UsersController {
       activityLevel: user.activityLevel,
       goal: user.goal,
       memberSince: user.created_at,
+      dailyCalories: userMacros.dailyCalories,
+      caloriesLeft: userMacros.caloriesLeft,
+      dailyProtein: userMacros.dailyProtein,
+      proteinLeft: userMacros.proteinLeft,
+      dailyCarbs: userMacros.dailyCarbs,
+      carbsLeft: userMacros.carbsLeft,
+      dailyFat: userMacros.dailyFat,
+      fatLeft: userMacros.fatLeft,
     };
   }
   
@@ -87,41 +97,5 @@ export class UsersController {
         isProfileCompleted: updatedUser.isProfileCompleted,
       },
     };
-  }
-
-  @Get('macros')
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Suggest user macros' })
-  @ApiResponse({
-    status: 200,
-    description: 'User macros suggested successfully',
-  })
-  async getMacros(@GetUser('userId') userId: string) {
-    const macros = await this.usersService.suggestDailyMacros(userId);
-    return macros;
-  }
-
-  @Post('macros')
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Create user macros' })
-  @ApiResponse({
-    status: 200,
-    description: 'User macros created successfully',
-  })
-  async createMacros(@GetUser('userId') userId: string, @Body() createUserMacrosDto: CreateUserMacrosDto) {
-    const macros = await this.usersService.createUserMacros(userId, createUserMacrosDto);
-    return macros;
-  }
-
-  @Put('macros')
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Update user macros' })
-  @ApiResponse({
-    status: 200,
-    description: 'User macros updated successfully',
-  })
-  async updateMacros(@GetUser('userId') userId: string, @Body() updateUserMacrosDto: UpdateUserMacrosDto) {
-    const macros = await this.usersService.updateUserMacros(userId, updateUserMacrosDto);
-    return macros;
   }
 } 

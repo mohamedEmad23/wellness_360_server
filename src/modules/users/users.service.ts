@@ -5,8 +5,6 @@ import { User } from './interfaces/user.interface';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UserMacros } from 'src/infrastructure/database/schemas/userMacros.schema';
-import { CreateUserMacrosDto } from './dto/create-user-macros.dto';
-import { UpdateUserMacrosDto } from './dto/update-user-macros.dto';
 
 @Injectable()
 export class UsersService {
@@ -41,8 +39,61 @@ export class UsersService {
     return this.userModel.findById(id).exec();
   }
 
+  async findUserMacrosById(id: string): Promise<UserMacros | null> {
+    return this.userMacrosModel.findOne({ userId: id }).exec();
+  }
+
   async updateById(id: string, updateData: Partial<User>): Promise<User | null> {
     return this.userModel.findByIdAndUpdate(id, updateData, { new: true }).exec();
+  }
+
+  // New method to get user macros - creates or updates if needed
+  async getUserMacros(userId: string): Promise<UserMacros> {
+    const userMacros = await this.findUserMacrosById(userId);
+    
+    // If userMacros exists and was created today, return it
+    if (userMacros && userMacros.date.toDateString() === new Date().toDateString()) {
+      return userMacros;
+    }
+    
+    // Otherwise calculate new macros based on user profile
+    const macros = await this.suggestDailyMacros(userId);
+    
+    // If macros exist but need update
+    if (userMacros) {
+      // Preserve the consumed macros when updating
+      const consumed = {
+        calories: userMacros.dailyCalories - userMacros.caloriesLeft,
+        protein: userMacros.dailyProtein - userMacros.proteinLeft,
+        carbs: userMacros.dailyCarbs - userMacros.carbsLeft,
+        fat: userMacros.dailyFat - userMacros.fatLeft,
+      };
+      
+      const updateData = {
+        dailyCalories: macros.dailyCalories,
+        caloriesLeft: macros.dailyCalories - consumed.calories,
+        dailyProtein: macros.dailyProtein,
+        proteinLeft: macros.dailyProtein - consumed.protein,
+        dailyCarbs: macros.dailyCarbs,
+        carbsLeft: macros.dailyCarbs - consumed.carbs,
+        dailyFat: macros.dailyFat,
+        fatLeft: macros.dailyFat - consumed.fat,
+        date: new Date(),
+      };
+      
+      return this.userMacrosModel.findOneAndUpdate(
+        { userId },
+        updateData,
+        { new: true, runValidators: true }
+      ).exec();
+    }
+    
+    // If no macros exist, create new ones
+    const newUserMacros = new this.userMacrosModel({
+      ...macros,
+      date: new Date(),
+    });
+    return newUserMacros.save();
   }
 
   async updateUserProfile(userId: string, updateUserDto: UpdateUserDto): Promise<User> {
@@ -113,6 +164,55 @@ export class UsersService {
       
       if (!updatedUser) {
         throw new BadRequestException('User not found or update failed.');
+      }
+      
+      // Custom dailyCalories handling
+      if (updateUserDto.dailyCalories !== undefined) {
+        // Get current macros or create new ones
+        const userMacros = await this.findUserMacrosById(userId) || await this.suggestDailyMacros(userId);
+        
+        // Calculate consumed amounts
+        const consumed = {
+          calories: userMacros.dailyCalories - userMacros.caloriesLeft,
+          protein: userMacros.dailyProtein - userMacros.proteinLeft,
+          carbs: userMacros.dailyCarbs - userMacros.carbsLeft,
+          fat: userMacros.dailyFat - userMacros.fatLeft,
+        };
+        
+        // Update with custom daily calories
+        const dailyCalories = Math.round(updateUserDto.dailyCalories);
+        const dailyProtein = Math.round(dailyCalories * 0.25);
+        const dailyCarbs = Math.round(dailyCalories * 0.5);
+        const dailyFat = Math.round(dailyCalories * 0.25);
+        
+        const updateData = {
+          dailyCalories,
+          caloriesLeft: Math.max(0, dailyCalories - consumed.calories),
+          dailyProtein,
+          proteinLeft: Math.max(0, dailyProtein - consumed.protein),
+          dailyCarbs,
+          carbsLeft: Math.max(0, dailyCarbs - consumed.carbs),
+          dailyFat,
+          fatLeft: Math.max(0, dailyFat - consumed.fat),
+          date: new Date(),
+        };
+        
+        await this.userMacrosModel.findOneAndUpdate(
+          { userId },
+          updateData,
+          { new: true, upsert: true, runValidators: true }
+        ).exec();
+      }
+      // If profile was updated with fields that affect macros (and no custom calories), update them too
+      else if (
+        updateUserDto.height !== undefined || 
+        updateUserDto.weight !== undefined || 
+        updateUserDto.activityLevel !== undefined || 
+        updateUserDto.goal !== undefined ||
+        updateUserDto.gender !== undefined
+      ) {
+        // This will update the macros based on the new profile
+        await this.getUserMacros(userId);
       }
       
       // Add isFirstUpdate property to the response
@@ -187,7 +287,6 @@ export class UsersService {
         throw new BadRequestException('Invalid goal');
     }
 
-
     const macros = {
       userId: userId,
       date: new Date(),
@@ -226,62 +325,4 @@ export class UsersService {
         return bmr;
     }
   }
-    
-   async createUserMacros
-   (userId: string, createUserMacrosDto: CreateUserMacrosDto)
-   : Promise<UserMacros> {
-    const existingMacros = await this.userMacrosModel.findOne({ userId }).exec();
-    if (existingMacros) {
-      return existingMacros;
-    }
-
-    const userMacros = new this.userMacrosModel({
-      userId: userId,
-      dailyCalories: Math.round(createUserMacrosDto.dailyCalories),
-      caloriesLeft: Math.round(createUserMacrosDto.dailyCalories),
-      dailyProtein: Math.round(createUserMacrosDto.dailyCalories * 0.25),
-      proteinLeft: Math.round(createUserMacrosDto.dailyCalories * 0.25),
-      dailyCarbs: Math.round(createUserMacrosDto.dailyCalories * 0.5),
-      carbsLeft: Math.round(createUserMacrosDto.dailyCalories * 0.5),
-      dailyFat: Math.round(createUserMacrosDto.dailyCalories * 0.25),
-      fatLeft: Math.round(createUserMacrosDto.dailyCalories * 0.25),
-      date: new Date(),
-    });
-
-    return userMacros.save();
-   }
-
-   async updateUserMacros(userId: string, updateUserMacrosDto: UpdateUserMacrosDto): Promise<UserMacros> {
-
-    const userMacros = await this.userMacrosModel.findOne({ userId }).exec();
-    if (!userMacros) {
-      throw new BadRequestException('User macros not found');
-    }
-
-    const newDailyCalories = updateUserMacrosDto.dailyCalories;
-    const newDailyProtein = (updateUserMacrosDto.dailyCalories * 0.25);
-    const newDailyCarbs = (updateUserMacrosDto.dailyCalories * 0.5);
-    const newDailyFat = (updateUserMacrosDto.dailyCalories * 0.25);
-
-    const updateData = {
-      dailyCalories: Math.round(newDailyCalories),
-      caloriesLeft: Math.round(newDailyCalories - (userMacros.dailyCalories - userMacros.caloriesLeft)),
-      dailyProtein: Math.round(newDailyProtein),
-      proteinLeft: Math.round(newDailyProtein - (userMacros.dailyProtein - userMacros.proteinLeft)),
-      dailyCarbs: Math.round(newDailyCarbs),
-      carbsLeft: Math.round(newDailyCarbs - (userMacros.dailyCarbs - userMacros.carbsLeft)),
-      dailyFat: Math.round(newDailyFat),
-      fatLeft: Math.round(newDailyFat - (userMacros.dailyFat - userMacros.fatLeft)),
-    };
-
-    const updatedMacros = await this.userMacrosModel.findOneAndUpdate(
-      { userId },
-      updateData,
-      { new: true, runValidators: true }
-    ).exec();
-
-    return updatedMacros;
-  }
-
-
 }
