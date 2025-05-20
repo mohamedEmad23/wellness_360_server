@@ -21,7 +21,8 @@
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.0",
-    "@nestjs/common": "^11.0.1",
+    "@nestjs/axios": "^4.0.0",
+    "@nestjs/common": "^11.0.17",
     "@nestjs/config": "^4.0.2",
     "@nestjs/core": "^11.0.1",
     "@nestjs/jwt": "^11.0.0",
@@ -36,6 +37,8 @@
     "class-validator": "^0.14.1",
     "cookie-parser": "^1.4.7",
     "dotenv": "^16.5.0",
+    "dayjs": "^1.11.13",
+    "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.13.2",
     "passport": "^0.7.0",
     "passport-jwt": "^4.0.1",
@@ -69,7 +72,7 @@
     "ts-loader": "^9.5.2",
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
-    "typescript": "^5.7.3",
+    "typescript": "^5.8.3",
     "typescript-eslint": "^8.20.0"
   },
   "jest": {
