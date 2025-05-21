@@ -39,6 +39,9 @@ export class Exercise {
 
   @Prop({ type: [String], default: [] })
   requiredEquipment: string[];
+  
+  @Prop({ type: Number, default: 3.5 })
+  metValue: number; // MET value for calorie calculation
 
   @Prop()
   notes?: string;
@@ -72,6 +75,18 @@ export class WorkoutDay {
 
   @Prop()
   notes?: string;
+  
+  @Prop({ default: false })
+  isCompleted?: boolean;
+  
+  @Prop()
+  completedAt?: Date;
+  
+  @Prop({ type: Number, default: 0 })
+  caloriesBurned?: number;
+  
+  @Prop({ type: String })
+  intensityLevel?: 'low' | 'moderate' | 'high';
 }
 
 @Schema({ timestamps: true })

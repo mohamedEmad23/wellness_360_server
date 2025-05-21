@@ -10,6 +10,7 @@ import { UserActivityModule } from './modules/user-activity/userActivity.module'
 import { FoodLogModule } from './modules/edamam/foodLog.module';
 import { SleepModule } from './modules/sleep/sleep.module';
 import { ScheduleModule } from '@nestjs/schedule';
+import { DashboardModule } from './modules/dashboard/dashboard.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { ScheduleModule } from '@nestjs/schedule';
     FoodLogModule,
     WorkoutsModule,
     SleepModule,
+    DashboardModule,
     ScheduleModule.forRoot()
   ],
   controllers: [AppController],

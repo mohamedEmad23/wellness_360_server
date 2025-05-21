@@ -126,12 +126,13 @@ The JSON must strictly follow this exact structure without ANY additional text o
       "exercises": [
         {
           "name": "Exercise name",
-          "description": "Exercise description",
+          "description": "Exercise description including specific form cues and detailed instructions",
           "sets": 3,
           "reps": "8-12",
           "restBetweenSets": "60 seconds",
           "targetMuscles": ["muscle1", "muscle2"],
-          "requiredEquipment": ["equipment1", "equipment2"]
+          "requiredEquipment": ["equipment1", "equipment2"],
+          "notes": "Additional notes, form tips, and variations"
         }
       ],
       "cooldown": "Cooldown description",
@@ -141,10 +142,26 @@ The JSON must strictly follow this exact structure without ANY additional text o
   ]
 }
 
-Generate a detailed workout plan based on the following requirements:
+CRITICAL INSTRUCTIONS:
+1. Create a complete 7-DAY WORKOUT PLAN with exactly 7 days (Day 1 through Day 7)
+2. Include appropriate rest or active recovery days as part of the 7-day plan
+3. For rest days, include the day, focus as "Rest and Recovery", and notes for recovery activities
+4. The plan must include all 7 days of the week, not just workout days
+
+Generate a scientifically-based, progressive workout plan following these requirements:
 ${prompt}
 
-IMPORTANT: Return a JSON object that exactly matches the structure shown above, with NO ADDITIONAL text, comments, code blocks or explanations. ONLY RETURN VALID, PARSEABLE JSON.`;
+The plan should be comprehensive, with each exercise having detailed descriptions including:
+1. Starting position
+2. Movement pattern
+3. Breathing instructions
+4. Common mistakes to avoid
+5. Progression variations
+6. Specific form cues
+
+Rest days should be strategically placed based on muscle groups worked. Include progressive overload principles.
+
+IMPORTANT: Return a JSON object that exactly matches the structure shown above, with NO ADDITIONAL text, comments, code blocks or explanations. ONLY RETURN VALID, PARSEABLE JSON with EXACTLY 7 days.`;
 
       const generationResult = await this.model.generateContent({
         contents: [{ role: 'user', parts: [{ text: structuredPrompt }] }],
@@ -156,8 +173,44 @@ IMPORTANT: Return a JSON object that exactly matches the structure shown above, 
       });
 
       const responseText = generationResult.response.text();
-  
-      return JSON.parse(responseText);
+      
+      try {
+        const parsedResponse = JSON.parse(responseText);
+        
+        // Verify that we have exactly 7 days
+        if (!parsedResponse.workoutDays || parsedResponse.workoutDays.length !== 7) {
+          this.logger.warn(`AI returned ${parsedResponse.workoutDays?.length || 0} days instead of 7. Adjusting...`);
+          
+          // Initialize workout days if missing
+          if (!parsedResponse.workoutDays) {
+            parsedResponse.workoutDays = [];
+          }
+          
+          // Add days until we have 7
+          while (parsedResponse.workoutDays.length < 7) {
+            const dayNumber = parsedResponse.workoutDays.length + 1;
+            parsedResponse.workoutDays.push({
+              day: `Day ${dayNumber}`,
+              focus: "Rest and Recovery",
+              warmup: "Light stretching and mobility work",
+              exercises: [],
+              cooldown: "Foam rolling and static stretching",
+              duration: 20,
+              notes: "Rest days are crucial for recovery and muscle growth. Stay hydrated and focus on good nutrition."
+            });
+          }
+          
+          // Truncate if we somehow have more than 7 days
+          if (parsedResponse.workoutDays.length > 7) {
+            parsedResponse.workoutDays = parsedResponse.workoutDays.slice(0, 7);
+          }
+        }
+        
+        return parsedResponse;
+      } catch (parseError) {
+        this.logger.error('Error parsing AI response as JSON', parseError);
+        throw new Error('Invalid JSON format in AI response');
+      }
     } catch (error) {
       this.logger.error('Error generating structured workout plan', error);
       throw new Error(

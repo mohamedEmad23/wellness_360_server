@@ -8,12 +8,15 @@ import {
   Param,
   Post,
   Put,
+  Query,
   Request,
   UseGuards,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
+  ApiBody,
   ApiOperation,
+  ApiParam,
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
@@ -21,6 +24,32 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { WorkoutsService } from '../workouts/services/workouts.service';
 import { CreateFitnessProfileDto } from '../workouts/dto/create-fitness-profile.dto';
 import { GenerateWorkoutPlanDto } from '../workouts/dto/generate-workout-plan.dto';
+import { GetUser } from '../../common/decorators/getUser.decorator';
+import { WorkoutType, WorkoutDifficulty } from '../../infrastructure/database/schemas/workout-plan.schema';
+import { ApiProperty } from '@nestjs/swagger';
+
+// Create a simple DTO for workout plan generation
+class GenerateWorkoutTypeDto {
+  @ApiProperty({ 
+    enum: WorkoutType, 
+    description: 'Type of workout to generate',
+    example: WorkoutType.STRENGTH,
+    required: false
+  })
+  type?: WorkoutType;
+}
+
+// DTO for marking workout day as completed
+class CompleteWorkoutDayDto {
+  @ApiProperty({ 
+    type: Number, 
+    description: 'Day index (0-6) to mark as completed',
+    example: 0,
+    minimum: 0,
+    maximum: 6
+  })
+  dayIndex: number;
+}
 
 @ApiTags('Workouts')
 @Controller('workouts')
@@ -53,11 +82,11 @@ export class WorkoutsController {
   @ApiResponse({ status: 201, description: 'Profile created/updated successfully.' })
   @ApiResponse({ status: 400, description: 'Invalid input.' })
   async createOrUpdateFitnessProfile(
-    @Request() req,
+    @GetUser('userId') userId: string,
     @Body() dto: CreateFitnessProfileDto,
   ) {
     try {
-      return this.workoutsService.createOrUpdateFitnessProfile(req.user._id.toString(), dto);
+      return this.workoutsService.createOrUpdateFitnessProfile(userId, dto);
     } catch (error) {
       this.handleServiceError(error, 'create fitness profile');
     }
@@ -69,9 +98,9 @@ export class WorkoutsController {
   @ApiOperation({ summary: 'Get fitness profile' })
   @ApiResponse({ status: 200, description: 'Returns user fitness profile.' })
   @ApiResponse({ status: 404, description: 'Profile not found.' })
-  async getFitnessProfile(@Request() req) {
+  async getFitnessProfile(@GetUser('userId') userId: string) {
     try {
-      return this.workoutsService.getFitnessProfile(req.user._id.toString());
+      return this.workoutsService.getFitnessProfile(userId);
     } catch (error) {
       this.handleServiceError(error, 'retrieve fitness profile');
     }
@@ -80,101 +109,132 @@ export class WorkoutsController {
   @UseGuards(JwtAuthGuard)
   @Post('generate')
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Generate AI-based workout plan' })
+  @ApiOperation({ summary: 'Generate AI-based workout plan using existing profile' })
   @ApiResponse({ status: 201, description: 'Workout plan generated successfully.' })
+  @ApiResponse({ status: 404, description: 'Fitness profile not found.' })
+  @ApiBody({ type: GenerateWorkoutTypeDto, required: false })
   async generateWorkoutPlan(
-    @Request() req,
-    @Body() dto: GenerateWorkoutPlanDto,
+    @GetUser('userId') userId: string,
+    @Body() dto?: GenerateWorkoutTypeDto
   ) {
     try {
-      return this.workoutsService.generateWorkoutPlan(req.user._id.toString(), dto);
+      const customOptions = { workoutType: dto?.type };
+      return this.workoutsService.generateWorkoutPlanFromProfile(userId, customOptions);
     } catch (error) {
       this.handleServiceError(error, 'generate workout plan');
     }
   }
 
   @UseGuards(JwtAuthGuard)
-  @Get('plans')
+  @Get('plan')
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Get all workout plans' })
-  @ApiResponse({ status: 200, description: 'Returns all user workout plans.' })
-  async getUserWorkoutPlans(@Request() req) {
+  @ApiOperation({ summary: 'Get current workout plan' })
+  @ApiResponse({ status: 200, description: 'Returns current workout plan.' })
+  @ApiResponse({ status: 404, description: 'Workout plan not found.' })
+  async getCurrentWorkoutPlan(@GetUser('userId') userId: string) {
     try {
-      return this.workoutsService.getUserWorkoutPlans(req.user._id.toString());
+      return this.workoutsService.getUserCurrentWorkoutPlan(userId);
     } catch (error) {
-      this.handleServiceError(error, 'retrieve workout plans');
+      this.handleServiceError(error, 'retrieve current workout plan');
     }
   }
 
   @UseGuards(JwtAuthGuard)
-  @Get('plans/:id')
+  @Post('plan/complete-day')
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Get a specific workout plan' })
-  @ApiResponse({ status: 200, description: 'Returns the specified workout plan.' })
-  async getWorkoutPlan(@Param('id') id: string) {
-    try {
-      return this.workoutsService.getWorkoutPlan(id);
-    } catch (error) {
-      this.handleServiceError(error, 'retrieve workout plan');
-    }
-  }
-
-  @UseGuards(JwtAuthGuard)
-  @Delete('plans/:id')
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Delete a workout plan' })
-  @ApiResponse({ status: 200, description: 'Workout plan deleted successfully.' })
-  async deleteWorkoutPlan(@Param('id') id: string) {
-    try {
-      await this.workoutsService.deleteWorkoutPlan(id);
-      return { message: 'Workout plan deleted successfully' };
-    } catch (error) {
-      this.handleServiceError(error, 'delete workout plan');
-    }
-  }
-
-  @UseGuards(JwtAuthGuard)
-  @Put('plans/:id/rate')
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Rate a workout plan' })
-  @ApiResponse({ status: 200, description: 'Workout plan rated successfully.' })
-  async rateWorkoutPlan(
-    @Param('id') id: string,
-    @Body('rating') rating: number,
+  @ApiOperation({ summary: 'Mark a workout day as completed' })
+  @ApiResponse({ status: 200, description: 'Workout day marked as completed.' })
+  @ApiResponse({ status: 404, description: 'Workout plan not found.' })
+  @ApiBody({ type: CompleteWorkoutDayDto })
+  async completeWorkoutDay(
+    @GetUser('userId') userId: string,
+    @Body() dto: CompleteWorkoutDayDto
   ) {
     try {
-      if (rating < 1 || rating > 5 || !Number.isInteger(rating)) {
-        throw new HttpException('Rating must be an integer between 1 and 5', HttpStatus.BAD_REQUEST);
-      }
-      return this.workoutsService.rateWorkoutPlan(id, rating);
+      return this.workoutsService.markWorkoutDayAsCompleted(userId, dto.dayIndex);
     } catch (error) {
-      this.handleServiceError(error, 'rate workout plan');
+      this.handleServiceError(error, 'mark workout day as completed');
     }
   }
-
+  
   @UseGuards(JwtAuthGuard)
-  @Post('plans/:id/track')
+  @Get('calories/total')
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Track workout plan usage' })
-  @ApiResponse({ status: 200, description: 'Workout plan usage tracked.' })
-  async trackWorkoutPlanUsage(@Param('id') id: string) {
+  @ApiOperation({ summary: 'Get total calories burned' })
+  @ApiResponse({ status: 200, description: 'Returns total calories burned.' })
+  async getTotalCaloriesBurned(@GetUser('userId') userId: string) {
     try {
-      return this.workoutsService.trackWorkoutPlanUsage(id);
+      const totalCalories = await this.workoutsService.getUserTotalCaloriesBurned(userId);
+      return { totalCaloriesBurned: totalCalories };
     } catch (error) {
-      this.handleServiceError(error, 'track workout plan usage');
+      this.handleServiceError(error, 'retrieve total calories burned');
     }
   }
-
+  
   @UseGuards(JwtAuthGuard)
-  @Get('recommended')
+  @Get('calories/daily')
   @ApiBearerAuth()
-  @ApiOperation({ summary: 'Get recommended workout plans' })
-  @ApiResponse({ status: 200, description: 'Returns recommended workout plans.' })
-  async getRecommendedWorkoutPlans(@Request() req) {
+  @ApiOperation({ summary: 'Get daily calories burned' })
+  @ApiResponse({ status: 200, description: 'Returns daily calories burned.' })
+  async getDailyCaloriesBurned(@GetUser('userId') userId: string) {
     try {
-      return this.workoutsService.getRecommendedWorkoutPlans(req.user._id.toString());
+      const dailyCalories = await this.workoutsService.getUserDailyCaloriesBurned(userId);
+      return { dailyCaloriesBurned: dailyCalories };
     } catch (error) {
-      this.handleServiceError(error, 'get recommended workout plans');
+      this.handleServiceError(error, 'retrieve daily calories burned');
+    }
+  }
+  
+  @UseGuards(JwtAuthGuard)
+  @Get('calories/weekly')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get weekly calories burned' })
+  @ApiResponse({ status: 200, description: 'Returns weekly calories burned.' })
+  async getWeeklyCaloriesBurned(@GetUser('userId') userId: string) {
+    try {
+      const weeklyCalories = await this.workoutsService.getUserWeeklyCaloriesBurned(userId);
+      return { weeklyCaloriesBurned: weeklyCalories };
+    } catch (error) {
+      this.handleServiceError(error, 'retrieve weekly calories burned');
+    }
+  }
+  
+  @UseGuards(JwtAuthGuard)
+  @Get('calories/stats')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get all calories burned statistics' })
+  @ApiResponse({ status: 200, description: 'Returns all calories burned metrics.' })
+  async getCaloriesStats(@GetUser('userId') userId: string) {
+    try {
+      const daily = await this.workoutsService.getUserDailyCaloriesBurned(userId);
+      const weekly = await this.workoutsService.getUserWeeklyCaloriesBurned(userId);
+      const total = await this.workoutsService.getUserTotalCaloriesBurned(userId);
+      
+      return {
+        dailyCaloriesBurned: daily,
+        weeklyCaloriesBurned: weekly,
+        totalCaloriesBurned: total
+      };
+    } catch (error) {
+      this.handleServiceError(error, 'retrieve calories stats');
+    }
+  }
+  
+  @UseGuards(JwtAuthGuard)
+  @Get('calories/history')
+  @ApiBearerAuth()
+  @ApiOperation({ summary: 'Get workout history with calories burned' })
+  @ApiResponse({ status: 200, description: 'Returns workout history with calories burned.' })
+  async getWorkoutHistory(
+    @GetUser('userId') userId: string,
+    @Query('limit') limit: string
+  ) {
+    try {
+      const limitNumber = limit ? parseInt(limit, 10) : 10;
+      const history = await this.workoutsService.getUserWorkoutHistory(userId, limitNumber);
+      return { workoutSessions: history };
+    } catch (error) {
+      this.handleServiceError(error, 'retrieve workout history');
     }
   }
 }
