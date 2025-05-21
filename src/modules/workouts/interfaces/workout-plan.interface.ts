@@ -9,6 +9,7 @@ export interface Exercise {
   restBetweenSets?: string;
   targetMuscles: string[];
   requiredEquipment: string[];
+  metValue?: number; // MET value for calorie calculation
   notes?: string;
   imageUrl?: string;
   videoUrl?: string;
@@ -22,6 +23,10 @@ export interface WorkoutDay {
   cooldown?: string;
   duration?: number;
   notes?: string;
+  isCompleted?: boolean;
+  completedAt?: Date | null;
+  caloriesBurned?: number;
+  intensityLevel?: 'low' | 'moderate' | 'high';
 }
 
 export interface WorkoutPlan extends Document {

@@ -65,6 +65,12 @@ export class FitnessProfile extends Document {
 
   @Prop({ type: [String], default: [] })
   availableEquipment: string[];
+
+  @Prop({ type: Number, min: 13, max: 120 })
+  age?: number;
+
+  @Prop({ type: String, enum: ['male', 'female', 'other'] })
+  gender?: string;
 }
 
 export const FitnessProfileSchema =

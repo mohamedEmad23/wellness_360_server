@@ -51,32 +51,6 @@ export class CreateFitnessProfileDto {
 
   @ApiProperty({
     type: Number,
-    description: 'User height in centimeters',
-    example: 175,
-    minimum: 50,
-    maximum: 250,
-  })
-  @IsNumber()
-  @Min(50, { message: 'Height must be at least 50 cm' })
-  @Max(250, { message: 'Height must be less than 250 cm' })
-  @IsOptional()
-  height?: number;
-
-  @ApiProperty({
-    type: Number,
-    description: 'User weight in kilograms',
-    example: 70,
-    minimum: 20,
-    maximum: 350,
-  })
-  @IsNumber()
-  @Min(20, { message: 'Weight must be at least 20 kg' })
-  @Max(350, { message: 'Weight must be less than 350 kg' })
-  @IsOptional()
-  weight?: number;
-
-  @ApiProperty({
-    type: Number,
     description: 'User target weight in kilograms',
     example: 65,
     minimum: 20,
@@ -110,12 +84,12 @@ export class CreateFitnessProfileDto {
   @ApiProperty({
     type: Number,
     description: 'Number of days per week available for working out',
-    minimum: 0,
+    minimum: 1,
     maximum: 7,
     default: 3,
   })
   @IsNumber()
-  @Min(0, { message: 'Available workout days must be at least 0' })
+  @Min(1, { message: 'Available workout days must be at least 1' })
   @Max(7, { message: 'Available workout days cannot exceed 7' })
   @IsOptional()
   availableWorkoutDays?: number;

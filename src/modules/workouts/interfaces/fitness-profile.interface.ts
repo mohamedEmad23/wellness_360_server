@@ -15,4 +15,6 @@ export interface FitnessProfile extends Document {
   preferredWorkoutDuration: number;
   hasGymAccess: boolean;
   availableEquipment: string[];
+  age?: number;
+  gender?: string;
 }
