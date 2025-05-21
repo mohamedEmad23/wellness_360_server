@@ -35,10 +35,17 @@ export class UserActivityService {
 
     const caloriesBurned = met * weight * durationInHours;
 
-    userMacros.caloriesLeft += caloriesBurned;
-    userMacros.carbsLeft += caloriesBurned * 0.5;
-    userMacros.proteinLeft += caloriesBurned * 0.25;
-    userMacros.fatLeft += caloriesBurned * 0.25;
+    // Update userMacros values and ensure they don't exceed daily totals
+    userMacros.caloriesLeft = Math.min(userMacros.dailyCalories, userMacros.caloriesLeft + caloriesBurned);
+    
+    // Convert calories to macronutrient grams using proper conversion factors
+    const carbsCalories = caloriesBurned * 0.5;
+    const proteinCalories = caloriesBurned * 0.25;
+    const fatCalories = caloriesBurned * 0.25;
+    
+    userMacros.carbsLeft = Math.min(userMacros.dailyCarbs, userMacros.carbsLeft + (carbsCalories / 4));
+    userMacros.proteinLeft = Math.min(userMacros.dailyProtein, userMacros.proteinLeft + (proteinCalories / 4));
+    userMacros.fatLeft = Math.min(userMacros.dailyFat, userMacros.fatLeft + (fatCalories / 9));
     await userMacros.save();
 
     const userActivity = new this.userActivityModel({
@@ -101,10 +108,17 @@ export class UserActivityService {
     const userMacros = await this.userMacrosModel.findOne({ userId: user._id });
     if (!userMacros) throw new NotFoundException('User macros not found');
   
-    userMacros.caloriesLeft -= caloriesBurned;
-    userMacros.carbsLeft -= caloriesBurned * 0.5;
-    userMacros.proteinLeft -= caloriesBurned * 0.25;
-    userMacros.fatLeft -= caloriesBurned * 0.25;
+    // Update userMacros values and ensure they don't go below zero
+    userMacros.caloriesLeft = Math.max(0, userMacros.caloriesLeft - caloriesBurned);
+    
+    // Convert calories to macronutrient grams using proper conversion factors
+    const carbsCalories = caloriesBurned * 0.5;
+    const proteinCalories = caloriesBurned * 0.25;
+    const fatCalories = caloriesBurned * 0.25;
+    
+    userMacros.carbsLeft = Math.max(0, userMacros.carbsLeft - (carbsCalories / 4));
+    userMacros.proteinLeft = Math.max(0, userMacros.proteinLeft - (proteinCalories / 4));
+    userMacros.fatLeft = Math.max(0, userMacros.fatLeft - (fatCalories / 9));
     await userMacros.save();
   
     await this.userActivityModel.findByIdAndDelete(userActivityId);

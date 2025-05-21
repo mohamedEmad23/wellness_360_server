@@ -71,13 +71,13 @@ export class UsersService {
       
       const updateData = {
         dailyCalories: macros.dailyCalories,
-        caloriesLeft: macros.dailyCalories - consumed.calories,
+        caloriesLeft: Math.max(0, macros.dailyCalories - consumed.calories),
         dailyProtein: macros.dailyProtein,
-        proteinLeft: macros.dailyProtein - consumed.protein,
+        proteinLeft: Math.max(0, macros.dailyProtein - consumed.protein),
         dailyCarbs: macros.dailyCarbs,
-        carbsLeft: macros.dailyCarbs - consumed.carbs,
+        carbsLeft: Math.max(0, macros.dailyCarbs - consumed.carbs),
         dailyFat: macros.dailyFat,
-        fatLeft: macros.dailyFat - consumed.fat,
+        fatLeft: Math.max(0, macros.dailyFat - consumed.fat),
         date: new Date(),
       };
       
@@ -181,9 +181,59 @@ export class UsersService {
         
         // Update with custom daily calories
         const dailyCalories = Math.round(updateUserDto.dailyCalories);
-        const dailyProtein = Math.round(dailyCalories * 0.25);
-        const dailyCarbs = Math.round(dailyCalories * 0.5);
-        const dailyFat = Math.round(dailyCalories * 0.25);
+        
+        // Get the user's goal to determine proper macronutrient distribution
+        const user = await this.findById(userId);
+        if (!user) {
+          throw new BadRequestException('User not found');
+        }
+        
+        // Set different macronutrient distributions based on goal
+        let proteinPercentage = 0;
+        let carbsPercentage = 0;
+        let fatPercentage = 0;
+
+        switch (user.goal) {
+          case 'lose':
+            // Higher protein to preserve muscle mass during weight loss
+            // Lower carbs to reduce calories and improve insulin sensitivity
+            // Moderate fat for hormone function
+            proteinPercentage = 0.40; // 40% protein
+            carbsPercentage = 0.30; // 30% carbs
+            fatPercentage = 0.30; // 30% fat
+            break;
+            
+          case 'maintain':
+            // Balanced approach for maintenance
+            proteinPercentage = 0.30; // 30% protein
+            carbsPercentage = 0.40; // 40% carbs
+            fatPercentage = 0.30; // 30% fat
+            break;
+            
+          case 'gain':
+            // Higher carbs to fuel workouts and support muscle growth
+            // Good protein for muscle building
+            // Moderate fat for hormonal balance
+            proteinPercentage = 0.25; // 25% protein
+            carbsPercentage = 0.50; // 50% carbs
+            fatPercentage = 0.25; // 25% fat
+            break;
+            
+          default:
+            // Default balanced distribution if goal is not set
+            proteinPercentage = 0.30;
+            carbsPercentage = 0.40;
+            fatPercentage = 0.30;
+        }
+        
+        // Calculate macronutrients in calories
+        const caloriesFromCarbs = dailyCalories * carbsPercentage;
+        const caloriesFromProtein = dailyCalories * proteinPercentage;
+        const caloriesFromFat = dailyCalories * fatPercentage;
+        
+        const dailyProtein = Math.round(caloriesFromProtein / 4); // Protein: 4 calories per gram
+        const dailyCarbs = Math.round(caloriesFromCarbs / 4); // Carbs: 4 calories per gram
+        const dailyFat = Math.round(caloriesFromFat / 9); // Fat: 9 calories per gram
         
         const updateData = {
           dailyCalories,
@@ -287,17 +337,54 @@ export class UsersService {
         throw new BadRequestException('Invalid goal');
     }
 
+    // Set different macronutrient distributions based on goal
+    let proteinPercentage = 0;
+    let carbsPercentage = 0;
+    let fatPercentage = 0;
+
+    switch (goal) {
+      case 'lose':
+        // Higher protein to preserve muscle mass during weight loss
+        // Lower carbs to reduce calories and improve insulin sensitivity
+        // Moderate fat for hormone function
+        proteinPercentage = 0.40; // 40% protein
+        carbsPercentage = 0.30; // 30% carbs
+        fatPercentage = 0.30; // 30% fat
+        break;
+        
+      case 'maintain':
+        // Balanced approach for maintenance
+        proteinPercentage = 0.30; // 30% protein
+        carbsPercentage = 0.40; // 40% carbs
+        fatPercentage = 0.30; // 30% fat
+        break;
+        
+      case 'gain':
+        // Higher carbs to fuel workouts and support muscle growth
+        // Good protein for muscle building
+        // Moderate fat for hormonal balance
+        proteinPercentage = 0.25; // 25% protein
+        carbsPercentage = 0.50; // 50% carbs
+        fatPercentage = 0.25; // 25% fat
+        break;
+    }
+
+    // Calculate macronutrients in calories
+    const caloriesFromCarbs = dailyCalories * carbsPercentage;
+    const caloriesFromProtein = dailyCalories * proteinPercentage;
+    const caloriesFromFat = dailyCalories * fatPercentage;
+
     const macros = {
       userId: userId,
       date: new Date(),
       dailyCalories: Math.round(dailyCalories),
       caloriesLeft: Math.round(dailyCalories),
-      dailyProtein: Math.round(dailyCalories * 0.25),
-      proteinLeft: Math.round(dailyCalories * 0.25),
-      dailyCarbs: Math.round(dailyCalories * 0.5),
-      carbsLeft: Math.round(dailyCalories * 0.5),
-      dailyFat: Math.round(dailyCalories * 0.25),
-      fatLeft: Math.round(dailyCalories * 0.25),
+      dailyProtein: Math.round(caloriesFromProtein / 4), // Protein: 4 calories per gram
+      proteinLeft: Math.round(caloriesFromProtein / 4),
+      dailyCarbs: Math.round(caloriesFromCarbs / 4), // Carbs: 4 calories per gram
+      carbsLeft: Math.round(caloriesFromCarbs / 4),
+      dailyFat: Math.round(caloriesFromFat / 9), // Fat: 9 calories per gram
+      fatLeft: Math.round(caloriesFromFat / 9),
     } as UserMacros;
 
     return macros;

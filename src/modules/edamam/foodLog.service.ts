@@ -27,12 +27,13 @@ export class FoodLogService {
 
     await this.foodLogModel.create([logWithUser]);
 
-    const caloriesLeft = userMacros.caloriesLeft - foodLog.calories;
-    const proteinLeft = userMacros.proteinLeft - foodLog.protein;
-    const carbsLeft = userMacros.carbsLeft - foodLog.carbs;
-    const fatLeft = userMacros.fatLeft - foodLog.fats;
+    const caloriesLeft = Math.max(0, userMacros.caloriesLeft - foodLog.calories);
+    const proteinLeft = Math.max(0, userMacros.proteinLeft - foodLog.protein);
+    const carbsLeft = Math.max(0, userMacros.carbsLeft - foodLog.carbs);
+    const fatLeft = Math.max(0, userMacros.fatLeft - foodLog.fats);
+    
     await this.userMacrosModel.updateOne({ _id: userMacros._id }, { 
-      caloriesLeft: caloriesLeft, proteinLeft: proteinLeft, carbsLeft: carbsLeft, fatLeft: fatLeft 
+      caloriesLeft, proteinLeft, carbsLeft, fatLeft 
     });
   }
 
@@ -62,12 +63,13 @@ export class FoodLogService {
     const foodLog = await this.foodLogModel.findById(foodLog_id).exec();
 
     if(foodLog.date.toDateString() === new Date().toDateString()) {
-      const caloriesLeft = userMacros.caloriesLeft + foodLog.calories;
-      const proteinLeft = userMacros.proteinLeft + foodLog.protein;
-      const carbsLeft = userMacros.carbsLeft + foodLog.carbs;
-      const fatLeft = userMacros.fatLeft + foodLog.fats;
+      const caloriesLeft = Math.min(userMacros.dailyCalories, userMacros.caloriesLeft + foodLog.calories);
+      const proteinLeft = Math.min(userMacros.dailyProtein, userMacros.proteinLeft + foodLog.protein);
+      const carbsLeft = Math.min(userMacros.dailyCarbs, userMacros.carbsLeft + foodLog.carbs);
+      const fatLeft = Math.min(userMacros.dailyFat, userMacros.fatLeft + foodLog.fats);
+      
       await this.userMacrosModel.updateOne({ _id: userMacros._id }, { 
-        caloriesLeft: caloriesLeft, proteinLeft: proteinLeft, carbsLeft: carbsLeft, fatLeft: fatLeft 
+        caloriesLeft, proteinLeft, carbsLeft, fatLeft 
       }).exec();
     }
     return this.foodLogModel.deleteOne({ _id: foodLog_id, userId: user_id }).exec();
