@@ -1,4 +1,4 @@
-import { Body, Controller, Get, NotFoundException, Put, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, NotFoundException, Post, Put, UseGuards } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiBearerAuth } from '@nestjs/swagger';
 import { UsersService } from './users.service';
 import { UpdateUserDto } from './dto/update-user.dto';
@@ -10,7 +10,6 @@ import { GetUser } from 'src/common/decorators/getUser.decorator';
 @UseGuards(JwtAuthGuard)
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
-  // make getprofile endpoint
   @Get('')
   @ApiBearerAuth()
   @ApiOperation({ summary: 'Get user profile' })
@@ -30,7 +29,11 @@ export class UsersController {
     const user = await this.usersService.findById(userId);
     if (!user) {
       throw new NotFoundException('User not found');
-    }    
+    }
+
+    // Get the macros for the user - will be created/calculated if not found
+    const userMacros = await this.usersService.getUserMacros(userId);
+        
     return {
       firstName: user.firstName,
       lastName: user.lastName,
@@ -42,9 +45,15 @@ export class UsersController {
       weight: user.weight,
       activityLevel: user.activityLevel,
       goal: user.goal,
-      dailyCalories: user.dailyCalories,
-      caloriesLeft: user.caloriesLeft,
       memberSince: user.created_at,
+      dailyCalories: userMacros.dailyCalories,
+      caloriesLeft: userMacros.caloriesLeft,
+      dailyProtein: userMacros.dailyProtein,
+      proteinLeft: userMacros.proteinLeft,
+      dailyCarbs: userMacros.dailyCarbs,
+      carbsLeft: userMacros.carbsLeft,
+      dailyFat: userMacros.dailyFat,
+      fatLeft: userMacros.fatLeft,
     };
   }
   
@@ -84,8 +93,6 @@ export class UsersController {
         weight: updatedUser.weight,
         activityLevel: updatedUser.activityLevel,
         goal: updatedUser.goal,
-        dailyCalories: updatedUser.dailyCalories,
-        caloriesLeft: updatedUser.caloriesLeft,
         isEmailVerified: updatedUser.isEmailVerified,
         isProfileCompleted: updatedUser.isProfileCompleted,
       },

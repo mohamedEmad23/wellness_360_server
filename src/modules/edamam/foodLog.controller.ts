@@ -41,7 +41,7 @@ export class FoodLogController {
   }
 
   @Post()
-  @ApiOperation({ summary: 'Log food intake' })
+  @ApiOperation({ summary: 'Log food intake by description' })
   @ApiResponse({ status: 201, description: 'The food has been successfully logged.' })
   @ApiResponse({ status: 400, description: 'Invalid input.' })
   @ApiBody({ type: LogFoodDto })

@@ -67,8 +67,6 @@ export class AuthService {
         weight: user.weight,
         activityLevel: user.activityLevel,
         goal: user.goal,
-        dailyCalories: user.dailyCalories,
-        caloriesLeft: user.caloriesLeft,
         isEmailVerified: user.isEmailVerified,
       },
       message: 'Registration successful. Please verify your email with the OTP sent to your email address.',

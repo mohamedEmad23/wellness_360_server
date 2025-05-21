@@ -12,8 +12,6 @@ export interface User extends Document {
   weight: number;
   activityLevel: 'sedentary' | 'lightly active' | 'moderately active' | 'very active';
   goal: 'lose' | 'maintain' | 'gain';
-  dailyCalories: number;
-  caloriesLeft: number;
   currentOtp?: string;
   emailVerificationOtpCreatedAt?: Date;
   emailVerificationOtpExpiresAt?: Date;

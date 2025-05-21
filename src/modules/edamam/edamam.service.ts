@@ -68,8 +68,13 @@ export class EdamamService {
       );
       return foodLog;
     } catch (error) {
-      console.error('Error analyzing food:', error?.response?.data || error.message);
-      console.error('Full error:', error);
+      // console.error('Error analyzing food:', error?.response?.data || error.message);
+      // console.error('Full error:', error);
+      // throw new HttpException('Failed to analyze food input', HttpStatus.INTERNAL_SERVER_ERROR);
+      // if status code is 400, throw a 400 error
+      if (error?.status === 400) {
+        throw new HttpException('Use only one food at a time', HttpStatus.BAD_REQUEST);
+      }
       throw new HttpException('Failed to analyze food input', HttpStatus.INTERNAL_SERVER_ERROR);
     }
   }

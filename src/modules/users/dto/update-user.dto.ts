@@ -21,17 +21,7 @@ export class UpdateUserDto {
   })
   @IsOptional()
   @IsDateString()
-  @Matches(/^\d{4}-\d{2}-\d{2}$/, { 
-    message: 'Date must be in format YYYY-MM-DD' 
-  })
   dob?: Date;
-
-  @ApiPropertyOptional({ example: 22 })
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  @Max(120)
-  age?: number;
 
   @ApiPropertyOptional({ example: 175, description: 'Height in centimeters' })
   @IsOptional()
@@ -63,17 +53,13 @@ export class UpdateUserDto {
   @IsEnum(['lose', 'maintain', 'gain'])
   goal?: 'lose' | 'maintain' | 'gain';
 
-  @ApiPropertyOptional({ example: 3000 })
+  @ApiPropertyOptional({
+    example: 2000,
+    description: 'Custom daily calorie goal'
+  })
   @IsOptional()
   @IsNumber()
   @Min(500)
   @Max(10000)
   dailyCalories?: number;
-
-  @ApiPropertyOptional({ example: 3000 })
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  @Max(10000)
-  caloriesLeft?: number;
 } 

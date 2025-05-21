@@ -52,12 +52,6 @@ export class User {
 
   @Prop({ default: 'maintain' })
   goal?: 'lose' | 'maintain' | 'gain';
-
-  @Prop({ default: 3000 })
-  dailyCalories?: number;
-
-  @Prop({ default: function () { return this.dailyCalories; } })
-  caloriesLeft?: number;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
