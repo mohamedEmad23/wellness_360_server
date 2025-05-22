@@ -359,22 +359,45 @@ export class WorkoutsService {
   /**
    * Mark a workout day as completed and track calories
    */
-  async markWorkoutDayAsCompleted(userId: string, workoutPlanId: string, dayIndex: number): Promise<WorkoutPlan> {
+  async markWorkoutDayAsCompleted(userId: string, dayIndex: number, workoutPlanId?: string): Promise<WorkoutPlan> {
     try {
-      const workoutPlan = await this.workoutPlanModel.findOne({
-        _id: workoutPlanId,
-        userId
-      });
+      // Ensure dayIndex is a valid number
+      const validDayIndex = Number(dayIndex);
+      
+      this.logger.log(`Marking workout day as completed for userId: ${userId}, dayIndex: ${validDayIndex}`);
+      
+      // Get the current workout plan for the user (only one plan per user)
+      const workoutPlan = await this.workoutPlanModel.findOne({ userId }).sort({ createdAt: -1 });
       
       if (!workoutPlan) {
-        throw new NotFoundException('Workout plan not found');
+        this.logger.error(`No workout plan found for user ${userId}`);
+        throw new NotFoundException('No workout plan found for this user');
       }
       
-      if (!workoutPlan.workoutDays || dayIndex >= workoutPlan.workoutDays.length) {
-        throw new BadRequestException('Invalid workout day index');
+      this.logger.log(`Found workout plan: ${workoutPlan._id}`);
+      
+      // More detailed validation of workout days
+      if (!workoutPlan.workoutDays) {
+        this.logger.error(`Workout plan has no workoutDays array`);
+        throw new BadRequestException('Workout plan has no workout days defined');
       }
       
-      const workoutDay = workoutPlan.workoutDays[dayIndex];
+      this.logger.log(`Workout plan has ${workoutPlan.workoutDays.length} days`);
+      
+      // Use 0 as default if dayIndex is NaN
+      const safeIndex = isNaN(validDayIndex) ? 0 : validDayIndex;
+      
+      if (safeIndex < 0 || safeIndex >= workoutPlan.workoutDays.length) {
+        this.logger.error(`Invalid dayIndex: ${safeIndex}. Workout plan has ${workoutPlan.workoutDays.length} days`);
+        throw new BadRequestException(`Invalid workout day index. Available range: 0-${workoutPlan.workoutDays.length - 1}`);
+      }
+      
+      const workoutDay = workoutPlan.workoutDays[safeIndex];
+      if (!workoutDay) {
+        this.logger.error(`Workout day at index ${safeIndex} is undefined even though index is in range`);
+        throw new BadRequestException('Invalid workout day');
+      }
+      
       if (workoutDay.isCompleted) {
         return workoutPlan; // Already completed, no changes needed
       }
@@ -402,7 +425,7 @@ export class WorkoutsService {
       await this.caloriesTrackingService.updateCaloriesBurned(
         userId, 
         workoutPlan,
-        dayIndex,
+        safeIndex,
         caloriesBurned
       );
       
@@ -410,7 +433,7 @@ export class WorkoutsService {
       await this.activityTrackingService.recordWorkoutActivity(
         userId, 
         workoutPlan,
-        dayIndex,
+        safeIndex,
         caloriesBurned
       );
       
