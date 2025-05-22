@@ -87,12 +87,23 @@ export class TopActivityDto {
   count: number;
 }
 
+export class PeriodRangeDto {
+  @ApiProperty({ description: 'Start date of the period (ISO string)' })
+  start: string;
+
+  @ApiProperty({ description: 'End date of the period (ISO string)' })
+  end: string;
+}
+
 export class ActivitySummaryDto {
   @ApiProperty({ description: 'Period of the summary', enum: ['daily', 'weekly', 'monthly'] })
   period: 'daily' | 'weekly' | 'monthly';
 
   @ApiProperty({ description: 'Human-readable period label' })
   periodLabel: string;
+
+  @ApiProperty({ description: 'Period date range' })
+  periodRange: PeriodRangeDto;
 
   @ApiProperty({ description: 'Activity statistics' })
   stats: {
@@ -114,6 +125,9 @@ export class NutritionSummaryDto {
 
   @ApiProperty({ description: 'Human-readable period label' })
   periodLabel: string;
+
+  @ApiProperty({ description: 'Period date range' })
+  periodRange: PeriodRangeDto;
 
   @ApiProperty({ description: 'Nutrition statistics' })
   stats: {
@@ -137,6 +151,9 @@ export class SleepSummaryDto {
 
   @ApiProperty({ description: 'Human-readable period label' })
   periodLabel: string;
+
+  @ApiProperty({ description: 'Period date range' })
+  periodRange: PeriodRangeDto;
 
   @ApiProperty({ description: 'Sleep statistics' })
   stats: {

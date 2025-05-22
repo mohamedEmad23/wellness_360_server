@@ -1,4 +1,4 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Query, UseGuards, BadRequestException } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
 import { DashboardService } from './dashboard.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -11,6 +11,7 @@ import {
   DashboardOverviewDto
 } from './dto/dashboard.dto';
 import { GetUser } from '../../common/decorators/getUser.decorator';
+import { isValid, parseISO } from 'date-fns';
 
 @ApiTags('dashboard')
 @Controller('dashboard')
@@ -40,37 +41,70 @@ export class DashboardController {
     return this.dashboardService.getUserProfile(userId);
   }
 
+  /**
+   * Validate period and date parameters
+   */
+  private validateDateParams(period?: string, date?: string) {
+    // Validate period
+    if (period && !['daily', 'weekly', 'monthly'].includes(period)) {
+      throw new BadRequestException('Period must be one of: daily, weekly, monthly');
+    }
+    
+    // Validate date format if provided
+    if (date) {
+      try {
+        const parsedDate = parseISO(date);
+        if (!isValid(parsedDate)) {
+          throw new BadRequestException('Invalid date format. Please use YYYY-MM-DD format');
+        }
+      } catch (err) {
+        throw new BadRequestException('Invalid date format. Please use YYYY-MM-DD format');
+      }
+    }
+
+    return { period: period as 'daily' | 'weekly' | 'monthly', date };
+  }
+
   @Get('activity-summary')
   @ApiOperation({ summary: 'Get activity summary' })
-  @ApiQuery({ name: 'period', enum: ['daily', 'weekly', 'monthly'], required: false })
+  @ApiQuery({ name: 'period', enum: ['daily', 'weekly', 'monthly'], required: false, description: 'Time period for data (defaults to weekly)' })
+  @ApiQuery({ name: 'date', required: false, description: 'Optional specific date in YYYY-MM-DD format' })
   @ApiResponse({ status: 200, description: 'Activity summary retrieved successfully', type: ActivitySummaryDto })
   async getActivitySummary(
     @GetUser('userId') userId: string,
-    @Query('period') period?: 'daily' | 'weekly' | 'monthly',
+    @Query('period') period?: string,
+    @Query('date') date?: string,
   ): Promise<ActivitySummaryDto> {
-    return this.dashboardService.getActivitySummary(userId, period);
+    const validated = this.validateDateParams(period, date);
+    return this.dashboardService.getActivitySummary(userId, validated.period, validated.date);
   }
 
   @Get('nutrition-summary')
   @ApiOperation({ summary: 'Get nutrition summary' })
-  @ApiQuery({ name: 'period', enum: ['daily', 'weekly', 'monthly'], required: false })
+  @ApiQuery({ name: 'period', enum: ['daily', 'weekly', 'monthly'], required: false, description: 'Time period for data (defaults to weekly)' })
+  @ApiQuery({ name: 'date', required: false, description: 'Optional specific date in YYYY-MM-DD format' })
   @ApiResponse({ status: 200, description: 'Nutrition summary retrieved successfully', type: NutritionSummaryDto })
   async getNutritionSummary(
     @GetUser('userId') userId: string,
-    @Query('period') period?: 'daily' | 'weekly' | 'monthly',
+    @Query('period') period?: string,
+    @Query('date') date?: string,
   ): Promise<NutritionSummaryDto> {
-    return this.dashboardService.getNutritionSummary(userId, period);
+    const validated = this.validateDateParams(period, date);
+    return this.dashboardService.getNutritionSummary(userId, validated.period, validated.date);
   }
 
   @Get('sleep-summary')
   @ApiOperation({ summary: 'Get sleep summary' })
-  @ApiQuery({ name: 'period', enum: ['daily', 'weekly', 'monthly'], required: false })
+  @ApiQuery({ name: 'period', enum: ['daily', 'weekly', 'monthly'], required: false, description: 'Time period for data (defaults to weekly)' })
+  @ApiQuery({ name: 'date', required: false, description: 'Optional specific date in YYYY-MM-DD format' })
   @ApiResponse({ status: 200, description: 'Sleep summary retrieved successfully', type: SleepSummaryDto })
   async getSleepSummary(
     @GetUser('userId') userId: string,
-    @Query('period') period?: 'daily' | 'weekly' | 'monthly',
+    @Query('period') period?: string,
+    @Query('date') date?: string,
   ): Promise<SleepSummaryDto> {
-    return this.dashboardService.getSleepSummary(userId, period);
+    const validated = this.validateDateParams(period, date);
+    return this.dashboardService.getSleepSummary(userId, validated.period, validated.date);
   }
 
   @Get('progress-tracking')
