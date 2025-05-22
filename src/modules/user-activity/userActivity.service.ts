@@ -5,6 +5,7 @@ import { UserActivity, UserActivityDocument } from '../../infrastructure/databas
 import { User } from '../../infrastructure/database/schemas/user.schema';
 import { Activity } from '../../infrastructure/database/schemas/activity.schema';
 import { CreateUserActivityDto } from './dto/create-user-activity.dto';
+import { UpdateUserActivityDto } from './dto/update-user-activity.dto';
 import { UserMacros } from 'src/infrastructure/database/schemas/userMacros.schema';
 
 @Injectable()
@@ -54,6 +55,7 @@ export class UserActivityService {
       duration: dto.duration,
       title: dto.title,
       caloriesBurned,
+      createdAt: dto.date ? new Date(dto.date) : new Date(),
     });
 
     await userActivity.save();
@@ -137,5 +139,101 @@ export class UserActivityService {
       name: activity.name,
       met: activity.met,
     }));
+  }
+
+  async updateActivity(userId: string, activityId: string, dto: UpdateUserActivityDto) {
+    const user_id = new Types.ObjectId(userId);
+    const activity_id = new Types.ObjectId(activityId);
+
+    const activityEntry = await this.userActivityModel
+      .findOne({ _id: activity_id, user: user_id })
+      .populate('activity')
+      .populate('user');
+
+    if (!activityEntry) {
+      throw new NotFoundException('Activity not found');
+    }
+
+    const user = activityEntry.user as User & { _id: Types.ObjectId };
+    const oldCaloriesBurned = activityEntry.caloriesBurned ?? 0;
+
+    // If duration or activity type is being updated, recalculate calories burned
+    if (dto.duration || dto.activityId) {
+      const activity = await this.activityModel.findById(
+        dto.activityId ? new Types.ObjectId(dto.activityId) : activityEntry.activity
+      );
+      if (!activity) {
+        throw new NotFoundException('Activity type not found');
+      }
+
+      const met = activity.met;
+      const weight = user.weight;
+      const durationInHours = (dto.duration || activityEntry.duration) / 60;
+      const newCaloriesBurned = met * weight * durationInHours;
+
+      // Update user macros with the difference in calories
+      const userMacros = await this.userMacrosModel.findOne({ userId: user._id });
+      if (!userMacros) {
+        throw new NotFoundException('User macros not found');
+      }
+
+      const caloriesDifference = newCaloriesBurned - oldCaloriesBurned;
+      userMacros.caloriesLeft = Math.max(0, userMacros.caloriesLeft + caloriesDifference);
+      
+      // Convert calories to macronutrient grams using proper conversion factors
+      const carbsCalories = caloriesDifference * 0.5;
+      const proteinCalories = caloriesDifference * 0.25;
+      const fatCalories = caloriesDifference * 0.25;
+      
+      userMacros.carbsLeft = Math.max(0, userMacros.carbsLeft + (carbsCalories / 4));
+      userMacros.proteinLeft = Math.max(0, userMacros.proteinLeft + (proteinCalories / 4));
+      userMacros.fatLeft = Math.max(0, userMacros.fatLeft + (fatCalories / 9));
+      await userMacros.save();
+
+      // Update the activity
+      const updatedActivity = await this.userActivityModel.findByIdAndUpdate(
+        activity_id,
+        {
+          activity: dto.activityId ? new Types.ObjectId(dto.activityId) : activityEntry.activity,
+          duration: dto.duration || activityEntry.duration,
+          title: dto.title || activityEntry.title,
+          caloriesBurned: newCaloriesBurned,
+          createdAt: dto.date ? new Date(dto.date) : activityEntry.createdAt,
+        },
+        { new: true }
+      ).populate('activity', 'name met');
+
+      return {
+        message: 'Activity updated successfully',
+        data: {
+          activityName: (updatedActivity.activity as Activity).name,
+          duration: updatedActivity.duration,
+          title: updatedActivity.title,
+          caloriesBurned: Math.round(updatedActivity.caloriesBurned),
+          date: updatedActivity.createdAt,
+        },
+      };
+    }
+
+    // If only updating title or date
+    const updatedActivity = await this.userActivityModel.findByIdAndUpdate(
+      activity_id,
+      {
+        title: dto.title || activityEntry.title,
+        createdAt: dto.date ? new Date(dto.date) : activityEntry.createdAt,
+      },
+      { new: true }
+    ).populate('activity', 'name met');
+
+    return {
+      message: 'Activity updated successfully',
+      data: {
+        activityName: (updatedActivity.activity as Activity).name,
+        duration: updatedActivity.duration,
+        title: updatedActivity.title,
+        caloriesBurned: Math.round(updatedActivity.caloriesBurned),
+        date: updatedActivity.createdAt,
+      },
+    };
   }
 }

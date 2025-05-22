@@ -127,12 +127,12 @@ export class DashboardService {
 
     // Calculate current period metrics
     const totalWorkoutTime = currentActivities.reduce((total, activity) => total + activity.duration, 0);
-    const totalCaloriesBurned = currentActivities.reduce((total, activity) => total + (activity.caloriesBurned || 0), 0);
+    const totalCaloriesBurned = Math.round(currentActivities.reduce((total, activity) => total + (activity.caloriesBurned || 0), 0));
     const activityCount = currentActivities.length;
     
     // Calculate previous period metrics for comparison
     const previousTotalWorkoutTime = previousActivities.reduce((total, activity) => total + activity.duration, 0);
-    const previousTotalCaloriesBurned = previousActivities.reduce((total, activity) => total + (activity.caloriesBurned || 0), 0);
+    const previousTotalCaloriesBurned = Math.round(previousActivities.reduce((total, activity) => total + (activity.caloriesBurned || 0), 0));
     const previousActivityCount = previousActivities.length;
     
     // Calculate percentage changes
@@ -380,12 +380,12 @@ export class DashboardService {
       stats: {
         avgDuration: {
           value: avgSleepDuration,
-          unit: 'minutes',
+          unit: 'hours',
           change: durationChange
         },
         avgRating: {
           value: avgSleepRating,
-          scale: '1-5',
+          scale: '5',
           change: ratingChange
         },
         consistency: {

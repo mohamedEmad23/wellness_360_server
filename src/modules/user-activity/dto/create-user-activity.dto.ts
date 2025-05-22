@@ -1,4 +1,4 @@
-import { IsMongoId, IsNotEmpty, IsNumber, Min } from 'class-validator';
+import { IsMongoId, IsNotEmpty, IsNumber, Min, IsOptional, IsDateString } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class CreateUserActivityDto {
@@ -25,4 +25,13 @@ export class CreateUserActivityDto {
   })
   @IsNotEmpty()
   title: string;
+
+  @ApiProperty({
+    description: 'Date of the activity (ISO string)',
+    example: '2024-03-20T10:30:00Z',
+    required: false,
+  })
+  @IsOptional()
+  @IsDateString()
+  date?: string;
 }
