@@ -8,7 +8,6 @@ import {
   Min,
   MinLength,
   IsEnum,
-  IsDateString,
 } from 'class-validator';
 
 export class RegisterDto {
@@ -49,11 +48,6 @@ export class RegisterDto {
   @IsOptional()
   @IsEnum(['male', 'female'])
   gender?: 'male' | 'female';
-
-  @ApiPropertyOptional({ example: '2002-05-20' })
-  @IsOptional()
-  @IsDateString()
-  dob?: Date;
 
   @ApiPropertyOptional({ example: 22 })
   @IsOptional()
