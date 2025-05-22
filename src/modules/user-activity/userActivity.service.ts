@@ -200,7 +200,7 @@ export class UserActivityService {
           caloriesBurned: newCaloriesBurned,
           createdAt: dto.date ? new Date(dto.date) : activityEntry.createdAt,
         },
-        { new: true }
+        { new: true, timestamps: false }
       ).populate('activity', 'name met');
 
       return {
@@ -222,7 +222,7 @@ export class UserActivityService {
         title: dto.title || activityEntry.title,
         createdAt: dto.date ? new Date(dto.date) : activityEntry.createdAt,
       },
-      { new: true }
+      { new: true, timestamps: false }
     ).populate('activity', 'name met');
 
     return {

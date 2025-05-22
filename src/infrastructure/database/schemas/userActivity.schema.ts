@@ -3,7 +3,7 @@ import { Types, Document } from 'mongoose';
 import { Activity } from './activity.schema';
 import { User } from './user.schema';
 
-@Schema({ timestamps: true })
+@Schema({ timestamps: { createdAt: 'createdAt', updatedAt: 'updatedAt' } })
 export class UserActivity {
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   user: Types.ObjectId | User;
@@ -19,11 +19,14 @@ export class UserActivity {
 
   @Prop()
   caloriesBurned?: number;
-}
 
-export interface UserActivityDocument extends UserActivity, Document {
+  @Prop()
   createdAt: Date;
+
+  @Prop()
   updatedAt: Date;
 }
+
+export interface UserActivityDocument extends UserActivity, Document {}
 
 export const UserActivitySchema = SchemaFactory.createForClass(UserActivity);
