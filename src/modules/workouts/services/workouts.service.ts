@@ -22,6 +22,7 @@ import {
 } from '../../../infrastructure/database/schemas/workout-plan.schema';
 import { User } from '../../../infrastructure/database/schemas/user.schema';
 import { FitnessGoal, FitnessLevel } from '../../../infrastructure/database/schemas/fitness-profile.schema';
+import { WorkoutNotificationService } from '../../notifications/services/workout-notification.service';
 
 // Interface for custom workout plan options
 interface WorkoutPlanCustomOptions {
@@ -46,6 +47,7 @@ export class WorkoutsService {
     private readonly caloriesService: CaloriesService,
     private readonly caloriesTrackingService: CaloriesTrackingService,
     private readonly activityTrackingService: ActivityTrackingService,
+    private readonly workoutNotificationService: WorkoutNotificationService,
   ) {}
 
   async createOrUpdateFitnessProfile(
@@ -354,17 +356,27 @@ export class WorkoutsService {
     return WorkoutType.CIRCUIT;
   }
 
-  // Update the markWorkoutDayAsCompleted method to track calories and record activities
-  async markWorkoutDayAsCompleted(userId: string, dayIndex: number): Promise<WorkoutPlan> {
+  /**
+   * Mark a workout day as completed and track calories
+   */
+  async markWorkoutDayAsCompleted(userId: string, workoutPlanId: string, dayIndex: number): Promise<WorkoutPlan> {
     try {
-      const workoutPlan = await this.workoutPlanModel.findOne({ userId });
+      const workoutPlan = await this.workoutPlanModel.findOne({
+        _id: workoutPlanId,
+        userId
+      });
       
       if (!workoutPlan) {
         throw new NotFoundException('Workout plan not found');
       }
       
       if (!workoutPlan.workoutDays || dayIndex >= workoutPlan.workoutDays.length) {
-        throw new BadRequestException(`Invalid day index: ${dayIndex}`);
+        throw new BadRequestException('Invalid workout day index');
+      }
+      
+      const workoutDay = workoutPlan.workoutDays[dayIndex];
+      if (workoutDay.isCompleted) {
+        return workoutPlan; // Already completed, no changes needed
       }
       
       // Get user data for calorie calculation
@@ -373,12 +385,7 @@ export class WorkoutsService {
         throw new NotFoundException('User not found');
       }
       
-      // Mark day as completed
-      const workoutDay = workoutPlan.workoutDays[dayIndex];
-      workoutDay.isCompleted = true;
-      workoutDay.completedAt = new Date();
-      
-      // Calculate calories burned
+      // Calculate calories burned for this workout day
       const caloriesBurned = this.caloriesService.calculateCaloriesBurned(
         workoutDay,
         user.weight,
@@ -386,46 +393,58 @@ export class WorkoutsService {
         user.gender
       );
       
-      // Update workout day with calories burned
-      workoutDay.caloriesBurned = caloriesBurned;
+      // Mark the day as completed
+      workoutDay.isCompleted = true;
+      workoutDay.completedAt = new Date();
+      workoutDay.caloriesBurned = Math.round(caloriesBurned);
       
-      // Determine intensity level if not already set
-      if (!workoutDay.intensityLevel) {
-        // Simple logic to determine intensity
-        if (workoutDay.focus.toLowerCase().includes('hiit') || 
-            workoutDay.focus.toLowerCase().includes('intense')) {
-          workoutDay.intensityLevel = 'high';
-        } else if (workoutDay.focus.toLowerCase().includes('light') || 
-                  workoutDay.focus.toLowerCase().includes('recovery')) {
-          workoutDay.intensityLevel = 'low';
-        } else {
-          workoutDay.intensityLevel = 'moderate';
-        }
+      // Track the calories burned
+      await this.caloriesTrackingService.updateCaloriesBurned(
+        userId, 
+        workoutPlan,
+        dayIndex,
+        caloriesBurned
+      );
+      
+      // Track the activity
+      await this.activityTrackingService.recordWorkoutActivity(
+        userId, 
+        workoutPlan,
+        dayIndex,
+        caloriesBurned
+      );
+      
+      // Check if this was the last workout in the plan
+      const allDaysCompleted = workoutPlan.workoutDays.every(day => day.isCompleted);
+      
+      // If all workout days are completed, send a notification
+      if (allDaysCompleted) {
+        await this.workoutNotificationService.sendWorkoutGoalAchievedNotification(
+          userId,
+          `completed your ${workoutPlan.name} workout plan!`,
+          {
+            workoutPlanId: workoutPlan._id.toString(),
+            workoutPlanName: workoutPlan.name,
+            completedAt: new Date()
+          }
+        );
+      } else {
+        // Send a workout completion notification
+        await this.workoutNotificationService.sendWorkoutGoalAchievedNotification(
+          userId,
+          `completed your ${workoutDay.focus || workoutDay.day} workout!`,
+          {
+            workoutPlanId: workoutPlan._id.toString(),
+            workoutDay: workoutDay.day,
+            caloriesBurned: Math.round(caloriesBurned)
+          }
+        );
       }
       
-      // Save the updated plan
       await workoutPlan.save();
-      
-      // Update user's calorie tracking
-      await this.caloriesTrackingService.updateCaloriesBurned(
-        userId,
-        workoutPlan,
-        dayIndex,
-        caloriesBurned
-      );
-      
-      // Record workout in user activities
-      await this.activityTrackingService.recordWorkoutActivity(
-        userId,
-        workoutPlan,
-        dayIndex,
-        caloriesBurned
-      );
-      
-      this.logger.debug(`User ${userId} completed day ${dayIndex}, calories burned: ${caloriesBurned}`);
       return workoutPlan;
     } catch (error) {
-      this.logger.error(`Error marking workout day as completed: ${error.message}`, error.stack);
+      this.logger.error(`Error marking workout day as completed: ${error.message}`);
       throw error;
     }
   }

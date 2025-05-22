@@ -5,6 +5,7 @@ import { InjectModel, InjectConnection } from '@nestjs/mongoose';
 import { FoodLog } from 'src/infrastructure/database/schemas/foodLog.schema';
 import { CreateFoodLogDto } from './dto/create-food-log.dto';
 import { UserMacros } from 'src/infrastructure/database/schemas/userMacros.schema';
+import { NutritionNotificationService } from '../notifications/services/nutrition-notification.service';
 
 @Injectable()
 export class FoodLogService {
@@ -13,6 +14,7 @@ export class FoodLogService {
     @InjectModel(FoodLog.name) private foodLogModel: Model<FoodLog>,
     @InjectModel(UserMacros.name) private userMacrosModel: Model<UserMacros>,
     @InjectConnection() private connection: Connection,
+    private readonly nutritionNotificationService: NutritionNotificationService,
   ) {}
 
   async createFoodLog(foodLog: CreateFoodLogDto, userId: string) {
@@ -25,7 +27,7 @@ export class FoodLogService {
       userId: user_id,
     };
 
-    await this.foodLogModel.create([logWithUser]);
+    const createdLog = await this.foodLogModel.create([logWithUser]);
 
     const caloriesLeft = Math.max(0, userMacros.caloriesLeft - foodLog.calories);
     const proteinLeft = Math.max(0, userMacros.proteinLeft - foodLog.protein);
@@ -35,6 +37,22 @@ export class FoodLogService {
     await this.userMacrosModel.updateOne({ _id: userMacros._id }, { 
       caloriesLeft, proteinLeft, carbsLeft, fatLeft 
     });
+
+    // Check if this is a high-calorie meal (over 600 calories)
+    if (foodLog.calories > 600) {
+      await this.nutritionNotificationService.notifyHighCalorieMeal(
+        userId,
+        foodLog.foodName,
+        foodLog.calories
+      );
+    }
+
+    // Check if user has exceeded or is close to their daily calorie limit
+    if (caloriesLeft <= 0) {
+      await this.nutritionNotificationService.checkUserCalorieLimit(userId);
+    }
+
+    return createdLog[0];
   }
 
   async getUserFoodLogs(userId: string) {

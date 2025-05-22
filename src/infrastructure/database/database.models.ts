@@ -8,6 +8,7 @@ import { WorkoutPlan, WorkoutPlanSchema } from './schemas/workout-plan.schema';
 import { FoodLog, FoodLogSchema } from './schemas/foodLog.schema';
 import { SleepLog, SleepLogSchema } from './schemas/sleepLog.schema';
 import { ReauthSession, ReauthSessionSchema } from './schemas/reauth-session.schema';
+import { Notification, NotificationSchema } from './schemas/notification.schema';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { ReauthSession, ReauthSessionSchema } from './schemas/reauth-session.sch
       { name: FoodLog.name, schema: FoodLogSchema },
       { name: SleepLog.name, schema: SleepLogSchema },
       { name: ReauthSession.name, schema: ReauthSessionSchema },
+      { name: Notification.name, schema: NotificationSchema },
     ]),
   ],
   exports: [

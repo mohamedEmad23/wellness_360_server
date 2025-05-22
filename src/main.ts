@@ -2,6 +2,7 @@ import { NestFactory } from '@nestjs/core';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import * as cookieParser from 'cookie-parser';
+import { ValidationPipe } from '@nestjs/common';
 
 async function bootstrap() {
   try {
@@ -13,6 +14,17 @@ async function bootstrap() {
     });
     // Enable cookie parsing
     app.use(cookieParser());
+
+    // Add validation pipe with transformation enabled
+    app.useGlobalPipes(
+      new ValidationPipe({
+        transform: true, // Transform payloads to DTO instances
+        transformOptions: {
+          enableImplicitConversion: true, // Enable implicit conversion of primitives
+        },
+        whitelist: true, // Strip properties not in DTO
+      }),
+    );
 
     const config = new DocumentBuilder()
       .setTitle('Wellness 360 API')

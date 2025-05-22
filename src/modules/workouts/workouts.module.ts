@@ -15,6 +15,7 @@ import { UserActivity, UserActivitySchema } from '../../infrastructure/database/
 import { Activity, ActivitySchema } from '../../infrastructure/database/schemas/activity.schema';
 import { User, UserSchema } from '../../infrastructure/database/schemas/user.schema';
 import { UserCaloriesBurned, UserCaloriesBurnedSchema } from '../../infrastructure/database/schemas/userCaloriesBurned.schema';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { UserCaloriesBurned, UserCaloriesBurnedSchema } from '../../infrastructu
       { name: UserCaloriesBurned.name, schema: UserCaloriesBurnedSchema },
     ]),
     GeminiModule,
+    NotificationsModule,
   ],
   controllers: [WorkoutsController],
   providers: [
