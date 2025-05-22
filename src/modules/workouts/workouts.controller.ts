@@ -49,13 +49,6 @@ class CompleteWorkoutDayDto {
     maximum: 6
   })
   dayIndex: number;
-
-  @ApiProperty({ 
-    type: String, 
-    description: 'ID of the workout plan',
-    example: '60d21b4667d0d01ce8541e68'
-  })
-  workoutPlanId: string;
 }
 
 @ApiTags('Workouts')
@@ -155,10 +148,27 @@ export class WorkoutsController {
   @ApiBody({ type: CompleteWorkoutDayDto })
   async completeWorkoutDay(
     @GetUser('userId') userId: string,
-    @Body() dto: CompleteWorkoutDayDto
+    @Body() body: any
   ) {
     try {
-      return this.workoutsService.markWorkoutDayAsCompleted(userId, dto.workoutPlanId, dto.dayIndex);
+      console.log('Request body:', body);
+      
+      // Try to extract dayIndex from any possible format
+      // It could be body.dayIndex or just plain { dayIndex: 0 }
+      let dayIndex = 0; // Default to day 0
+      
+      if (body) {
+        if (typeof body === 'object') {
+          // Try standard property access
+          if ('dayIndex' in body) {
+            dayIndex = Number(body.dayIndex);
+          }
+        }
+      }
+      
+      console.log('dayIndex after parsing:', dayIndex);
+      
+      return this.workoutsService.markWorkoutDayAsCompleted(userId, dayIndex);
     } catch (error) {
       this.handleServiceError(error, 'mark workout day as completed');
     }
