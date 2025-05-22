@@ -20,7 +20,6 @@ export class UpdateUserDto {
     description: 'Date of birth in YYYY-MM-DD format' 
   })
   @IsOptional()
-  @IsDateString()
   dob?: Date;
 
   @ApiPropertyOptional({ example: 175, description: 'Height in centimeters' })
