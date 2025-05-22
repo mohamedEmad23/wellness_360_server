@@ -55,6 +55,12 @@ export class CreateUserDto {
   @IsDateString()
   dob?: Date;
 
+  @ApiPropertyOptional({ example: 22 })
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  age?: number;
+
   @ApiProperty({ example: 175, description: 'Height in centimeters' })
   @IsNumber()
   @Min(50)
