@@ -5,7 +5,7 @@ import { sleepLogInterface } from './interfaces/sleepLog.interface';
 import { createSleepLogDTO } from './dto/create-sleepLog.dto';
 import { updateSleepLogDTO } from './dto/update-sleepLog.dto';
 import { SleepLog } from 'src/infrastructure/database/schemas/sleepLog.schema';
-import { SleepNotificationService } from '../notifications/services/sleep-notification.service';
+import { SleepNotificationService } from '../Notifications/services/sleep-notification.service';
 
 @Injectable()
 export class SleepService {

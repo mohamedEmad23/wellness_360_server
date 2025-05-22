@@ -4,7 +4,7 @@ import { UserActivityController } from './userActivity.controller';
 import { DatabaseModule } from 'src/infrastructure/database/database.module';
 import { UserMacros, UserMacrosSchema } from 'src/infrastructure/database/schemas/userMacros.schema';
 import { MongooseModule } from '@nestjs/mongoose';
-import { NotificationsModule } from '../notifications/notifications.module';
+import { NotificationsModule } from '../Notifications/notifications.module';
 
 @Module({
   imports: [

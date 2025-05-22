@@ -5,7 +5,7 @@ import { InjectModel, InjectConnection } from '@nestjs/mongoose';
 import { FoodLog } from 'src/infrastructure/database/schemas/foodLog.schema';
 import { CreateFoodLogDto } from './dto/create-food-log.dto';
 import { UserMacros } from 'src/infrastructure/database/schemas/userMacros.schema';
-import { NutritionNotificationService } from '../notifications/services/nutrition-notification.service';
+import { NutritionNotificationService } from '../Notifications/services/nutrition-notification.service';
 
 @Injectable()
 export class FoodLogService {

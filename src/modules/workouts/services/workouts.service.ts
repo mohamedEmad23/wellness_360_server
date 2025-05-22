@@ -22,7 +22,7 @@ import {
 } from '../../../infrastructure/database/schemas/workout-plan.schema';
 import { User } from '../../../infrastructure/database/schemas/user.schema';
 import { FitnessGoal, FitnessLevel } from '../../../infrastructure/database/schemas/fitness-profile.schema';
-import { WorkoutNotificationService } from '../../notifications/services/workout-notification.service';
+import { WorkoutNotificationService } from '../../Notifications/services/workout-notification.service';
 
 // Interface for custom workout plan options
 interface WorkoutPlanCustomOptions {
