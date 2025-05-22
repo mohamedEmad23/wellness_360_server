@@ -49,6 +49,13 @@ class CompleteWorkoutDayDto {
     maximum: 6
   })
   dayIndex: number;
+
+  @ApiProperty({ 
+    type: String, 
+    description: 'ID of the workout plan',
+    example: '60d21b4667d0d01ce8541e68'
+  })
+  workoutPlanId: string;
 }
 
 @ApiTags('Workouts')
@@ -151,7 +158,7 @@ export class WorkoutsController {
     @Body() dto: CompleteWorkoutDayDto
   ) {
     try {
-      return this.workoutsService.markWorkoutDayAsCompleted(userId, dto.dayIndex);
+      return this.workoutsService.markWorkoutDayAsCompleted(userId, dto.workoutPlanId, dto.dayIndex);
     } catch (error) {
       this.handleServiceError(error, 'mark workout day as completed');
     }

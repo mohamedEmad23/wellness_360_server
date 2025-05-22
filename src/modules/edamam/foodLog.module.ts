@@ -6,12 +6,14 @@ import { DatabaseModule } from 'src/infrastructure/database/database.module';
 import { HttpModule } from '@nestjs/axios';
 import { UserMacros, UserMacrosSchema } from 'src/infrastructure/database/schemas/userMacros.schema';
 import { MongooseModule } from '@nestjs/mongoose';
+import { NotificationsModule } from '../notifications/notifications.module';
 
 @Module({
   imports: [
     DatabaseModule,
     HttpModule,
     MongooseModule.forFeature([{ name: UserMacros.name, schema: UserMacrosSchema }]),
+    NotificationsModule,
   ],
   controllers: [FoodLogController],
   providers: [FoodLogService, EdamamService],

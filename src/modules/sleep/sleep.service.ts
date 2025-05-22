@@ -5,12 +5,14 @@ import { sleepLogInterface } from './interfaces/sleepLog.interface';
 import { createSleepLogDTO } from './dto/create-sleepLog.dto';
 import { updateSleepLogDTO } from './dto/update-sleepLog.dto';
 import { SleepLog } from 'src/infrastructure/database/schemas/sleepLog.schema';
+import { SleepNotificationService } from '../notifications/services/sleep-notification.service';
 
 @Injectable()
 export class SleepService {
   constructor(
     @InjectModel(SleepLog.name)
     private readonly sleepLogModel: Model<sleepLogInterface>,
+    private readonly sleepNotificationService: SleepNotificationService,
   ) {}
 
   async create(userId: string, data: createSleepLogDTO): Promise<sleepLogInterface> {
@@ -26,20 +28,75 @@ export class SleepService {
       throw new Error('endTime must be after startTime');
     }
 
+    const durationHours = durationMs / (1000 * 60 * 60);
+
     const log = new this.sleepLogModel({
-      ...data,
       startTime: start,
       endTime: end,
-      duration: durationMs / (1000 * 60 * 60),
+      duration: durationHours,
+      rating: data.rating,
+      notes: data.notes,
       userID: new Types.ObjectId(userId),
     });
 
-    return await log.save();
+    const savedLog = await log.save();
+
+    // Send sleep quality notification if rating is provided and sleep duration is logged
+    if (data.rating && durationHours) {
+      const rating = Number(data.rating);
+      // Evaluate sleep quality
+      if (rating >= 4 && durationHours >= 7) {
+        // Good sleep quality
+        this.sleepNotificationService.sendSleepQualityNotification(
+          userId,
+          rating,
+          durationHours,
+          true
+        );
+      } else if (rating <= 2 || durationHours < 6) {
+        // Poor sleep quality
+        this.sleepNotificationService.sendSleepQualityNotification(
+          userId,
+          rating,
+          durationHours,
+          false
+        );
+      }
+    }
+
+    return savedLog;
   }
 
   async update(logId: Types.ObjectId, userId: string, updateData: updateSleepLogDTO): Promise<string> {
     await this.verifyOwnership(logId, userId);
-    await this.sleepLogModel.updateOne({ _id: logId }, updateData);
+    
+    // Create a copy of the update data to modify
+    const updatedFields: any = { ...updateData };
+    
+    // Handle date conversions and duration recalculation if dates are updated
+    if (updateData.startTime || updateData.endTime) {
+      const sleepLog = await this.sleepLogModel.findById(logId);
+      
+      // Get the dates (either from update data or existing log)
+      const startTime = updateData.startTime ? new Date(updateData.startTime) : sleepLog.startTime;
+      const endTime = updateData.endTime ? new Date(updateData.endTime) : sleepLog.endTime;
+      
+      // Calculate new duration
+      const durationMs = endTime.getTime() - startTime.getTime();
+      
+      if (durationMs <= 0) {
+        throw new Error('endTime must be after startTime');
+      }
+      
+      const durationHours = durationMs / (1000 * 60 * 60);
+      
+      // Update the fields
+      if (updateData.startTime) updatedFields.startTime = startTime;
+      if (updateData.endTime) updatedFields.endTime = endTime;
+      updatedFields.duration = durationHours;
+    }
+    
+    await this.sleepLogModel.updateOne({ _id: logId }, updatedFields);
     return `Sleep log with ID ${logId} successfully updated`;
   }
 

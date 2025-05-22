@@ -7,6 +7,7 @@ import { Activity } from '../../infrastructure/database/schemas/activity.schema'
 import { CreateUserActivityDto } from './dto/create-user-activity.dto';
 import { UpdateUserActivityDto } from './dto/update-user-activity.dto';
 import { UserMacros } from 'src/infrastructure/database/schemas/userMacros.schema';
+import { ActivityNotificationService } from '../notifications/services/activity-notification.service';
 
 @Injectable()
 export class UserActivityService {
@@ -15,6 +16,7 @@ export class UserActivityService {
     @InjectModel(User.name) private userModel: Model<User>,
     @InjectModel(Activity.name) private activityModel: Model<Activity>,
     @InjectModel(UserMacros.name) private userMacrosModel: Model<UserMacros>,
+    private readonly activityNotificationService: ActivityNotificationService,
   ) {}
 
   async logActivity(dto: CreateUserActivityDto, user_id: string) {
@@ -59,6 +61,23 @@ export class UserActivityService {
     });
 
     await userActivity.save();
+
+    // Send achievement notification for significant activities
+    if (caloriesBurned > 300 || dto.duration >= 30) {
+      const message = dto.duration >= 30 
+        ? `completed a ${dto.duration}-minute ${activity.name} workout`
+        : `burned ${Math.round(caloriesBurned)} calories with ${activity.name}`;
+      
+      await this.activityNotificationService.sendActivityAchievementNotification(
+        user_id,
+        message,
+        {
+          activityName: activity.name,
+          duration: dto.duration,
+          caloriesBurned: Math.round(caloriesBurned)
+        }
+      );
+    }
 
     return {
       message: 'Activity logged successfully',
