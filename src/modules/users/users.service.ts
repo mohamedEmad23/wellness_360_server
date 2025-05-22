@@ -101,15 +101,10 @@ export class UsersService {
       
       // Validate the date format if it's provided
       if (updateUserDto.dob) {
-        const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
         const dobString = updateUserDto.dob.toString();
+        let parsedDate = new Date(dobString);
         
-        if (!dateRegex.test(dobString)) {
-          throw new BadRequestException('Invalid date format. Use YYYY-MM-DD format.');
-        }
-        
-        // Additional date validation
-        const parsedDate = new Date(dobString);
+        // Only check if it's a valid date
         if (isNaN(parsedDate.getTime())) {
           throw new BadRequestException('Invalid date value. Please provide a valid date.');
         }

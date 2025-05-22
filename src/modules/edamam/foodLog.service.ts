@@ -60,12 +60,14 @@ export class FoodLogService {
   }
 
   async getUserFoodLogsByDate(userId: string, date: Date) {
-    const start = new Date(date);
-    start.setUTCHours(0, 0, 0, 0);
-  
-    const end = new Date(start);
-    end.setUTCDate(end.getUTCDate() + 1);
-  
+    // Create a date object and work with local timezone consistently
+    const dateObj = new Date(date);
+    // Start of day in local timezone
+    const start = new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate(), 0, 0, 0);
+    
+    // End of day in local timezone (start of next day)
+    const end = new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate() + 1, 0, 0, 0);
+    
     return this.foodLogModel.find({
       userId: new Types.ObjectId(userId),
       date: { $gte: start, $lt: end },
