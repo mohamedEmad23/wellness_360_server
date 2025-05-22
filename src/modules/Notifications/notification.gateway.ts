@@ -53,7 +53,7 @@ export class NotificationsGateway
   ): { success: boolean } {
     try {
       const { userId } = payload;
-        console.log('userId', userId);
+        
       if (!userId) {
         this.logger.warn(`Authentication failed: Missing user ID`);
         return { success: false };

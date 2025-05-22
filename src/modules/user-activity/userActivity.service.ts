@@ -7,7 +7,7 @@ import { Activity } from '../../infrastructure/database/schemas/activity.schema'
 import { CreateUserActivityDto } from './dto/create-user-activity.dto';
 import { UpdateUserActivityDto } from './dto/update-user-activity.dto';
 import { UserMacros } from 'src/infrastructure/database/schemas/userMacros.schema';
-import { ActivityNotificationService } from '../notifications/services/activity-notification.service';
+import { ActivityNotificationService } from '../Notifications/services/activity-notification.service';
 
 @Injectable()
 export class UserActivityService {

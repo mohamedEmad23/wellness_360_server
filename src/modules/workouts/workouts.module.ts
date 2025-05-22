@@ -15,7 +15,7 @@ import { UserActivity, UserActivitySchema } from '../../infrastructure/database/
 import { Activity, ActivitySchema } from '../../infrastructure/database/schemas/activity.schema';
 import { User, UserSchema } from '../../infrastructure/database/schemas/user.schema';
 import { UserCaloriesBurned, UserCaloriesBurnedSchema } from '../../infrastructure/database/schemas/userCaloriesBurned.schema';
-import { NotificationsModule } from '../notifications/notifications.module';
+import { NotificationsModule } from '../Notifications/notifications.module';
 
 @Module({
   imports: [

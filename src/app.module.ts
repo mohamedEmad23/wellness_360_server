@@ -11,7 +11,7 @@ import { FoodLogModule } from './modules/edamam/foodLog.module';
 import { SleepModule } from './modules/sleep/sleep.module';
 import { ScheduleModule } from '@nestjs/schedule';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
-import { NotificationsModule } from './modules/notifications/notifications.module';
+import { NotificationsModule } from './modules/Notifications/notifications.module';
 
 @Module({
   imports: [

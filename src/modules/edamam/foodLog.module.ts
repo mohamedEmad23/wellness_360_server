@@ -6,7 +6,7 @@ import { DatabaseModule } from 'src/infrastructure/database/database.module';
 import { HttpModule } from '@nestjs/axios';
 import { UserMacros, UserMacrosSchema } from 'src/infrastructure/database/schemas/userMacros.schema';
 import { MongooseModule } from '@nestjs/mongoose';
-import { NotificationsModule } from '../notifications/notifications.module';
+import { NotificationsModule } from '../Notifications/notifications.module';
 
 @Module({
   imports: [
